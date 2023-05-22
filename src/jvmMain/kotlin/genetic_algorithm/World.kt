@@ -1,5 +1,8 @@
 package genetic_algorithm
 
+import database.Database
+import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.launch
 import unique
 import kotlin.random.Random
 
@@ -9,14 +12,21 @@ class World(
     private val generationSize: Int = 100,
     private val populationSize: Int = 100,
     private val mutationRate: Double = 0.1,
+    initialRoutes: List<List<Int>>? = null,
 ) {
-    private val population: MutableList<Routes> =
-        MutableList(populationSize) { Routes(distanceMatrix, numberOfRoutes, mutationRate) }
+    var population: MutableList<Routes> =
+        MutableList(populationSize) {
+            Routes(
+                distMatrix = distanceMatrix,
+                numberOfRoutes = numberOfRoutes,
+                mutationRate = mutationRate,
+                initialRoutes = initialRoutes
+            )
+        }
     private var cumulativeProportions: List<Double> = updateCumulativeProportion()
-    fun bestRoutes(): Routes = population.maxBy { it.fitness }
 
-    private fun tournamentSelection(tournamentSize: Int): Routes {
-        val tournament = population.shuffled().take(tournamentSize)
+    private fun tournamentSelection(tournamentSize: Int, previousSelected: Routes?): Routes {
+        val tournament = population.filter { it != previousSelected }.shuffled().take(tournamentSize)
         return tournament.maxBy { it.fitness }
     }
 
@@ -46,25 +56,29 @@ class World(
         }
         population.addAll(offspring)
         population.sortByDescending { it.fitness }
-        for (i in population.lastIndex downTo populationSize)
-            population.removeAt(i)
+        population = population.take(populationSize).toMutableList()
     }
 
-    fun solve() {
+    suspend fun solve() {
         repeat(generationSize) {
             onGeneration(tournamentSize = Random.nextInt((populationSize * 0.2).toInt(), populationSize))
-            println(bestRoutes().fitness)
+            val fitnesses = population.map { it.fitness }
+            coroutineScope {
+                launch {
+                    Database.saveFitness(fitnesses.average() to fitnesses.max())
+                }
+            }
         }
     }
 
-    private fun getParent(tournamentSize: Int): Routes {
-        if (Random.nextDouble() > 0.5) return tournamentSelection(tournamentSize)
+    private fun getParent(tournamentSize: Int, previousSelected: Routes? = null): Routes {
+        if (Random.nextDouble() > 0.5) return tournamentSelection(tournamentSize, previousSelected)
         return biasedRandomSelection()
     }
 
     private fun getParents(tournamentSize: Int): Pair<Routes, Routes> {
         val parent1 = getParent(tournamentSize)
-        val parent2 = unique(getParent(tournamentSize), parent1) { getParent(tournamentSize) }
+        val parent2 = unique(getParent(tournamentSize, parent1), parent1) { getParent(tournamentSize, parent1) }
         return parent1 to parent2
     }
 

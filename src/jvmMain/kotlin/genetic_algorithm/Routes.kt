@@ -1,24 +1,26 @@
 package genetic_algorithm
 
-import unique
 import uniqueIn
-import kotlin.math.abs
 import kotlin.math.min
 import kotlin.random.Random
 
-@Suppress("DataClassPrivateConstructor")
-data class Routes private constructor(
+class Routes private constructor(
     val routes: List<List<Int>>,
     private val distMatrix: Array<DoubleArray>,
-    val mutationRate: Double,
+    private val mutationRate: Double,
 ) {
-    constructor(distMatrix: Array<DoubleArray>, numberOfRoutes: Int, mutationRate: Double) :
-            this(List(numberOfRoutes) { randomRoute(distMatrix.size) }, distMatrix, mutationRate)
+    constructor(
+        distMatrix: Array<DoubleArray>,
+        numberOfRoutes: Int,
+        mutationRate: Double,
+        initialRoutes: List<List<Int>>? = null,
+    ) :
+            this(initialRoutes ?: List(numberOfRoutes) { randomRoute(distMatrix.size) }, distMatrix, mutationRate)
 
     val fitness: Double =
         100 / routes.maxOf { route -> route.windowed(2).sumOf { distMatrix[it[0]][it[1]] } }
 
-    val nodesVisited = routes.flatten().distinct()
+    private val nodesVisited = routes.flatten().distinct()
 
     fun crossover(other: Routes): Pair<Routes, Routes> {
         val (routes1, routes2) = Companion.crossover(routes, other.routes)
@@ -30,6 +32,14 @@ data class Routes private constructor(
             r2.add(b)
         }
         return copy(routes = r1) to copy(routes = r2)
+    }
+
+    private fun copy(routes: List<List<Int>>): Routes {
+        return Routes(
+            routes = routes,
+            distMatrix = distMatrix,
+            mutationRate = mutationRate,
+        )
     }
 
     fun mutate(): Routes {
@@ -45,7 +55,12 @@ data class Routes private constructor(
 
             fun rotateMutate(): List<Int> {
                 val rotateValue = Random.nextInt(0, size)
-                return drop(rotateValue) + take(rotateValue)
+                val rotationStart = Random.nextInt(0, size)
+                val rotationEnd = Random.nextInt(rotationStart, size)
+                val tail = slice(rotationStart..rotationEnd)
+                return slice(0 until rotationStart) + tail.drop(rotateValue) + tail.take(rotateValue) + slice(
+                    rotationEnd + 1 until size
+                )
             }
 
             fun removeMutate(): List<Int> {

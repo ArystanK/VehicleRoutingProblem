@@ -12,7 +12,7 @@ class BusStopsRepositoryImplementation {
     private val client = BusStopsClient
     private val database = Database
     suspend fun getBusStops(searchBox: Rectangle): List<BusStop> {
-        val data = database.getData()
+        val data = database.getBusStops()
         if (data.isNotEmpty()) return data
         val busStopFeatures = searchBox.partition(3)
             .asFlow()
@@ -29,7 +29,7 @@ class BusStopsRepositoryImplementation {
                 id = index
             )
         }
-        database.saveData(busStops)
+        database.saveBusStops(busStops)
         return busStops
     }
 }

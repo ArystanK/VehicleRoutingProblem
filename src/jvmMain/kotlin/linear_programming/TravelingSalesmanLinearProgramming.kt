@@ -13,22 +13,9 @@ fun travelingSalesmanProblemLinearProgramming(distanceMatrix: Array<DoubleArray>
         }
     }
 
-    fun MPSolver.setConnectedConstraint(x: Array<Array<MPVariable>>) {
-        for (i in x.indices) for (j in x.indices) {
-            if (i == j) continue
-            for (a in x.indices) {
-                if (a == i || a == j) continue
-                val c = makeConstraint(Double.NEGATIVE_INFINITY, 0.0)
-                c.setCoefficient(x[i][j], 1.0)
-                c.setCoefficient(x[i][a], -1.0)
-                c.setCoefficient(x[a][j], -1.0)
-            }
-        }
-    }
-
     fun MPSolver.setDegreeConstraint(x: Array<Array<MPVariable>>) {
         for (i in x.indices) {
-            val c = makeConstraint(1.0, 2.0)
+            val c = makeConstraint(2.0, 2.0)
             for (j in x.indices) if (i == j) continue else c.setCoefficient(x[i][j], 1.0)
         }
         for (i in x.indices) for (j in x.indices) {
@@ -44,7 +31,6 @@ fun travelingSalesmanProblemLinearProgramming(distanceMatrix: Array<DoubleArray>
     Loader.loadNativeLibraries()
     val solver = MPSolver.createSolver("SCIP")
     val x = Array(distanceMatrix.size) { i -> Array(distanceMatrix.size) { j -> solver.makeBoolVar("x[$i, $j]") } }
-    solver.setConnectedConstraint(x)
     solver.setDegreeConstraint(x)
     solver.setNoSelfLoopConstraint(x)
     val objective = solver.objective()

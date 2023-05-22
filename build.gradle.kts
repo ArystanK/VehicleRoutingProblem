@@ -39,6 +39,13 @@ kotlin {
                 implementation("org.jetbrains.exposed:exposed-jdbc:$exposedVersion")
                 implementation("com.google.ortools:ortools-java:9.6.2534")
 
+                implementation ("org.jetbrains.lets-plot:lets-plot-jfx:3.2.0")
+                implementation ("org.jetbrains.lets-plot:lets-plot-kotlin-jvm:4.4.1")
+
+                implementation("org.openjfx:javafx-base:17:win")
+                implementation("org.openjfx:javafx-swing:17:win")
+                implementation("org.openjfx:javafx-graphics:17:win")
+
                 implementation("org.slf4j:slf4j-api:1.7.25")
                 runtimeOnly("org.postgresql:postgresql:42.2.27")
             }
