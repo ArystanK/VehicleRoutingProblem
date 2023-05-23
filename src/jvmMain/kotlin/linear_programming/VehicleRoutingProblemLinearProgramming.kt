@@ -4,6 +4,7 @@ import com.google.ortools.Loader
 import com.google.ortools.linearsolver.MPSolver
 import com.google.ortools.linearsolver.MPVariable
 import database.Database
+import database.saveRouteToDatabase
 import kotlinx.coroutines.coroutineScope
 import toAdjacencyMatrices
 import toRoute
@@ -64,18 +65,7 @@ suspend fun solveVRPLinearProgramming(
     throw Exception("Infeasible solution")
 }
 
-suspend fun saveRouteToDatabase(
-    numberOfRoutes: Int,
-    distMatrix: Array<DoubleArray>,
-    routes: Array<Array<BooleanArray>>,
-): Array<Array<BooleanArray>> {
-    coroutineScope {
-        val prevRouteId = Database.getLastRouteId()
-        for (i in prevRouteId until routes.size + prevRouteId)
-            Database.saveRoute(routes[i - prevRouteId].toRoute(), i)
-    }
-    return routes
-}
+
 
 private fun MPSolver.setObjective(z: MPVariable) {
     val objective = objective()

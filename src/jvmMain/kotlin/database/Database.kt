@@ -1,8 +1,10 @@
 package database
 
 import data.BusStop
+import kotlinx.coroutines.coroutineScope
 import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.transactions.transaction
+import toRoute
 
 object Database {
     private fun connectToDatabase() = org.jetbrains.exposed.sql.Database.connect(
@@ -85,6 +87,32 @@ object Database {
     fun getLastRouteId(): Int = transaction {
         addLogger(StdOutSqlLogger)
         RouteTable.selectAll().orderBy(RouteTable.routeId, order = SortOrder.DESC).limit(1)
-            .map { it[RouteTable.routeId] }.first()
+            .map { it[RouteTable.routeId] }.firstOrNull() ?: 0
     }
+}
+
+suspend fun saveRouteToDatabase(
+    numberOfRoutes: Int,
+    distMatrix: Array<DoubleArray>,
+    routes: Array<Array<BooleanArray>>,
+): Array<Array<BooleanArray>> {
+    coroutineScope {
+        val prevRouteId = Database.getLastRouteId()
+        for (i in prevRouteId until routes.size + prevRouteId)
+            Database.saveRoute(routes[i - prevRouteId].toRoute(), i)
+    }
+    return routes
+}
+
+suspend fun saveRouteToDatabase(
+    numberOfRoutes: Int,
+    distMatrix: Array<DoubleArray>,
+    routes: List<List<Int>>,
+): List<List<Int>> {
+    coroutineScope {
+        val prevRouteId = Database.getLastRouteId()
+        for (i in prevRouteId until routes.size + prevRouteId)
+            Database.saveRoute(routes[i - prevRouteId], i)
+    }
+    return routes
 }

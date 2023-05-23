@@ -3,13 +3,7 @@ import client_api.Rectangle
 import data.BusStop
 import data.BusStopsRepositoryImplementation
 import kotlinx.coroutines.runBlocking
-import kotlinx.serialization.ExperimentalSerializationApi
-import kotlinx.serialization.json.Json
-import kotlinx.serialization.json.decodeFromStream
-import kotlinx.serialization.json.encodeToJsonElement
-import data.VRPSolution
 import linear_programming.solveVRPLinearProgramming
-import java.io.File
 import kotlin.math.abs
 import kotlin.math.pow
 
@@ -22,7 +16,7 @@ fun main() = runBlocking {
             Point(71.65595628500706, 50.996389716773805)
         )
     )
-    val numberOfNodes = 40
+    val numberOfNodes = 100
     val numberOfRoutes = 15
     val distanceMatrix = generateDistanceMatrix(coordinates, numberOfNodes) { first, second ->
         euclideanDistance(first.lat to first.lon, second.lat to second.lon)

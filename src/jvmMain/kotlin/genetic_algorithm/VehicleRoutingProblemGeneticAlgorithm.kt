@@ -1,5 +1,6 @@
 package genetic_algorithm
 
+import database.saveRouteToDatabase
 import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.decodeFromStream
@@ -21,6 +22,7 @@ class VehicleRoutingProblemGeneticAlgorithm(
             initialRoutes = initRoutes
         )
         ga.solve()
-        return ga.population.maxBy { it.fitness }.routes
+        val routes = ga.population.maxBy { it.fitness }.routes
+        return saveRouteToDatabase(numberOfRoutes = numberOfRoutes, distMatrix = distMatrix, routes = routes)
     }
 }

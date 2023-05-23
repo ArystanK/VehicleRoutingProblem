@@ -2,8 +2,11 @@ import androidx.compose.desktop.ui.tooling.preview.Preview
 import androidx.compose.material.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
+import androidx.compose.ui.window.Window
+import androidx.compose.ui.window.application
 import center.sciprog.maps.compose.*
 import center.sciprog.maps.features.FeatureGroup
+import center.sciprog.maps.features.color
 import database.Database
 import io.ktor.client.*
 import io.ktor.client.engine.cio.*
@@ -31,45 +34,25 @@ fun App() {
             viewScope = viewScope,
             features = FeatureGroup.build(WebMercatorSpace) {
                 points.forEach {
-                    points(it.map { it.lat to it.lon })
+                    var prevPoint: Pair<Double, Double>? = null
+                    it.map { it.lat to it.lon }.forEach { point ->
+                        circle(point)
+                        prevPoint?.let {
+                            line(it, point)
+                        }
+                        prevPoint = point
+                    }
+//                    points(points = it.map { it.lat to it.lon }, id = it.toString())
                 }
             }
         )
     }
 }
 
-//fun main() = application {
-//    Window(onCloseRequest = ::exitApplication) {
-//        App()
-//    }
-//}
-
-
-fun main() {
-    val fitness = Database.getFitness()
-    val data1 = mapOf(
-        "average fitness" to fitness.map { it.first },
-        "generation" to fitness.indices
-    )
-
-    val p1 =
-        letsPlot(data1) + geomPoint(color = "red", alpha = .3) { x = "generation"; y = "average fitness" }
-    val data2 = mapOf(
-        "max fitness" to fitness.map { it.second },
-        "generation" to fitness.indices
-    )
-    val p2 =
-        letsPlot(data2) + geomPoint(color = "green", alpha = .3) { x = "generation"; y = "max fitness" }
-    val bunch = GGBunch()
-        .addPlot(p1, 0, 0)
-        .addPlot(p2, 1000, 0)
-    bunch.show()
-
-//
-//    val maxAvgFitness = fitness.maxBy { it.first }.first
-//    val maxMaxFitness = fitness.maxBy { it.second }.second
-//    val p = letsPlot(
-
-//    )
-//    (p + ggsize(700, 350)).show()
+fun main() = application {
+    Window(onCloseRequest = ::exitApplication) {
+        App()
+    }
 }
+
+
