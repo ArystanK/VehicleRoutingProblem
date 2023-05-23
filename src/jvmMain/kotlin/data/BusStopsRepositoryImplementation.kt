@@ -1,3 +1,5 @@
+package data
+
 import client_api.BusStopsClient
 import client_api.Feature
 import client_api.Point
@@ -12,7 +14,7 @@ class BusStopsRepositoryImplementation {
     private val client = BusStopsClient
     private val database = Database
     suspend fun getBusStops(searchBox: Rectangle): List<BusStop> {
-        val data = database.getBusStops()
+        val data = database.getBusStops().sortedBy { it.id }
         if (data.isNotEmpty()) return data
         val busStopFeatures = searchBox.partition(3)
             .asFlow()

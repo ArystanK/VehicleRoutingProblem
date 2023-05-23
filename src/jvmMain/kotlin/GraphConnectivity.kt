@@ -1,28 +1,9 @@
 import linear_programming.travelingSalesmanProblemLinearProgramming
-import kotlin.math.pow
 
 fun Map<Int, Map<Int, Boolean>>.connectComponents(
     distanceMatrix: Array<DoubleArray>,
 ): Map<Int, Map<Int, Boolean>> {
-    fun getConnectedComponents(adjacencyMatrix: Map<Int, Map<Int, Boolean>>): List<Pair<Int, Int>> {
-        fun dfs(node: Int, visited: MutableSet<Int> = mutableSetOf()): Int {
-            visited.add(node)
-            for (neighbor in adjacencyMatrix.keys)
-                if (adjacencyMatrix[node]?.get(neighbor) == true && neighbor !in visited)
-                    dfs(neighbor, visited)
-            return node
-        }
-
-        val routes = mutableListOf<Pair<Int, Int>>()
-        for (i in adjacencyMatrix.keys) {
-            if (adjacencyMatrix[i]?.entries?.sumOf { if (it.value) 1 else 0.toInt() } == 1)
-                routes.add(i to dfs(i))
-        }
-
-        return routes
-    }
-
-    val components = getConnectedComponents(this)
+    val components = getConnectedComponents()
     if (components.size == 1) return this
     val newDistanceMatrix = Array(components.size) { i ->
         DoubleArray(components.size) { j ->
@@ -38,16 +19,43 @@ fun Map<Int, Map<Int, Boolean>>.connectComponents(
     return newAdjacencyMatrix
 }
 
-fun List<Pair<Int, Int>>.flatten(): List<Int> {
-    return map { listOf(it.first, it.second) }.flatten()
+private fun Map<Int, Map<Int, Boolean>>.getConnectedComponents(): List<Pair<Int, Int>> {
+    val visited = mutableSetOf<Int>()
+    val components = mutableListOf<Pair<Int, Int>>()
+
+    for (vertex in keys) {
+        if (vertex !in visited) {
+            val component = dfs(this, vertex, visited)
+            components.add(component)
+        }
+    }
+
+    return components
 }
 
-fun distance(pair: Pair<Int, Int>, pair1: Pair<Int, Int>, distanceMatrix: Array<DoubleArray>): Double {
+private fun dfs(adjacencyMatrix: Map<Int, Map<Int, Boolean>>, vertex: Int, visited: MutableSet<Int>): Pair<Int, Int> {
+    visited.add(vertex)
+    var start = vertex
+    var end = vertex
+
+    for (neighbor in adjacencyMatrix[vertex].orEmpty().keys) {
+        if (adjacencyMatrix[vertex]?.get(neighbor) == true && neighbor !in visited) {
+            val component = dfs(adjacencyMatrix, neighbor, visited)
+            start = minOf(start, component.first)
+            end = maxOf(end, component.second)
+        }
+    }
+
+    return start to end
+}
+
+
+private fun distance(pair: Pair<Int, Int>, pair1: Pair<Int, Int>, distanceMatrix: Array<DoubleArray>): Double {
     return (distanceMatrix[pair.first][pair1.first] + distanceMatrix[pair.second][pair1.second]) / 2
 
 }
 
-fun Map<Int, Map<Int, Boolean>>.toRoute(): List<Int> {
+private fun Map<Int, Map<Int, Boolean>>.toRoute(): List<Int> {
     val route = mutableListOf<Int>()
     fun dfs(node: Int, visited: MutableSet<Int> = mutableSetOf()) {
         route.add(node)
@@ -71,26 +79,27 @@ fun Array<BooleanArray>.toRoute(addLastToCycle: Boolean = true): List<Int> {
     }
     // find a node with degree = 1
     // run dfs starting with this node
-    val start = indices.firstOrNull { get(it).sumOf { if (it) 1.toInt() else 0 } == 1 }
-    if (start == null) {
-        dfs(0)
-        if (addLastToCycle) route.add(0)
-    } else dfs(start)
+    val start = indices.firstOrNull { get(it).sumOf { if (it) 1.toInt() else 0 } == 2 } ?: return emptyList()
+    dfs(start)
+    if (addLastToCycle) route.add(start)
     return route
 }
 
-fun Array<BooleanArray>.diagonalize(): Array<BooleanArray> =
+private fun Array<BooleanArray>.diagonalize(): Array<BooleanArray> =
     Array(size) { i -> BooleanArray(size) { j -> this[i][j] || this[j][i] } }
 
-fun Array<BooleanArray>.removeZeroRows(): Map<Int, Map<Int, Boolean>> {
-    val zeroIndices = indices.filter { get(it).sumOf { it.toInt() } == 0 }
-    val result = mutableMapOf<Int, MutableMap<Int, Boolean>>()
+
+private fun Array<BooleanArray>.filterFalse(): Map<Int, Map<Int, Boolean>> {
+    val rowsWithOnlyFalse = withIndex().filter { booleans -> booleans.value.all { !it } }.map { it.index }
+    val result = mutableMapOf<Int, Map<Int, Boolean>>()
     for (i in indices) {
-        if (i in zeroIndices) continue
+        val row = mutableMapOf<Int, Boolean>()
+        if (i in rowsWithOnlyFalse) continue
         for (j in indices) {
-            if (j in zeroIndices) continue
-            result[i] = (result.getOrElse(i) { mutableMapOf() } + (j to this[i][j])).toMutableMap()
+            if (j in rowsWithOnlyFalse) continue
+            row[j] = this[i][j]
         }
+        result[i] = row
     }
     return result
 }

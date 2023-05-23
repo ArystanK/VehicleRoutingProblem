@@ -3,51 +3,78 @@ package linear_programming
 import com.google.ortools.Loader
 import com.google.ortools.linearsolver.MPSolver
 import com.google.ortools.linearsolver.MPVariable
-import connectComponents
-import diagonalize
-import kotlinx.coroutines.runBlocking
-import removeZeroRows
+import database.Database
+import kotlinx.coroutines.coroutineScope
 import toAdjacencyMatrices
 import toRoute
 
-class VehicleRoutingProblemLinearProgramming {
-    fun solve(
-        numberOfRoutes: Int,
-        distMatrix: Array<DoubleArray>,
-    ): List<List<Int>> {
-        Loader.loadNativeLibraries()
-        val solver = MPSolver.createSolver("SCIP")
+suspend fun solveVRPLinearProgramming(
+    numberOfRoutes: Int,
+    distMatrix: Array<DoubleArray>,
+): Array<Array<BooleanArray>> {
+    if (distMatrix.isEmpty()) return saveRouteToDatabase(
+        numberOfRoutes,
+        distMatrix,
+        emptyArray()
+    )
+    if (distMatrix.size == 1) return saveRouteToDatabase(
+        routes = Array(numberOfRoutes) {
+            if (it == 0) arrayOf(
+                booleanArrayOf(true)
+            ) else emptyArray()
+        },
+        numberOfRoutes = numberOfRoutes,
+        distMatrix = distMatrix
+    )
+    if (distMatrix.size == 2) return saveRouteToDatabase(
+        routes = Array(numberOfRoutes) {
+            if (it == 0) arrayOf(
+                booleanArrayOf(false, true),
+                booleanArrayOf(true, false)
+            ) else emptyArray()
+        },
+        numberOfRoutes = numberOfRoutes,
+        distMatrix = distMatrix
+    )
+    if (numberOfRoutes == 1) return saveRouteToDatabase(
+        routes = arrayOf(travelingSalesmanProblemLinearProgramming(distMatrix)),
+        distMatrix = distMatrix,
+        numberOfRoutes = numberOfRoutes
+    )
+    Loader.loadNativeLibraries()
+    val solver = MPSolver.createSolver("SCIP")
 
-        val x = solver.createVariableX(numberOfRoutes, distMatrix.size)
-        val z = solver.createVariableZ()
+    val x = solver.createVariableX(numberOfRoutes, distMatrix.size)
+    val z = solver.createVariableZ()
 
-        solver.setIsVisitedConstraints(x)
-        solver.setDegreeConstraints(x)
-        solver.makeNoSingleRouteConstraint(x)
-        solver.setMaxDistanceConstraint(z, x, distMatrix)
-        solver.setObjective(z)
+    solver.makeIsVisitedConstraints(x)
+    solver.makeDegreeConstraints(x)
+    solver.makeNoSingleRouteConstraint(x)
+    solver.makeDiagonalConstraint(x)
+    solver.makeNoSelfLoopsConstrain(x)
+    solver.makeMaxDistanceConstraint(z, x, distMatrix)
+    solver.setObjective(z)
 
-        val result = solver.solve()
-        if (result == MPSolver.ResultStatus.OPTIMAL) {
-            return x
-                .toAdjacencyMatrices { it.solutionValue() == 1.0 }
-                .map {
-                    it
-                        .diagonalize()
-                        .removeZeroRows()
-//                        .also {
-//                            println(it.keys.joinToString())
-//                            println(it.entries.joinToString("\n") { it.value.entries.joinToString(prefix = "${it.key}: ") { it.value.toString() } })
-//                        }
-                        .connectComponents(distMatrix)
-//                        .also { println(it) }
-                        .toRoute()
-                }
-        }
-        println(result)
-        println("The problem does not have an optimal solution!")
-        return listOf()
+    val result = solver.solve()
+    if (result == MPSolver.ResultStatus.OPTIMAL) return saveRouteToDatabase(
+        routes = x.toAdjacencyMatrices { it.solutionValue() == 1.0 },
+        distMatrix = distMatrix,
+        numberOfRoutes = numberOfRoutes
+    )
+    throw Exception("Infeasible solution")
+}
+
+suspend fun saveRouteToDatabase(
+    numberOfRoutes: Int,
+    distMatrix: Array<DoubleArray>,
+    routes: Array<Array<BooleanArray>>,
+): Array<Array<BooleanArray>> {
+    coroutineScope {
+        val prevRouteId = Database.getLastRouteId()
+        for (i in prevRouteId until routes.size + prevRouteId)
+            Database.saveRoute(routes[i - prevRouteId].toRoute(), i)
     }
+    return routes
 }
 
 private fun MPSolver.setObjective(z: MPVariable) {
@@ -61,8 +88,7 @@ private fun MPSolver.createVariableX(m: Int, totalNumberOfNodes: Int): Array<Arr
 
 private fun MPSolver.createVariableZ(): MPVariable = makeNumVar(0.0, Double.POSITIVE_INFINITY, "z")
 
-
-private fun MPSolver.setIsVisitedConstraints(x: Array<Array<Array<MPVariable>>>) {
+private fun MPSolver.makeIsVisitedConstraints(x: Array<Array<Array<MPVariable>>>) {
     for (i in x.indices) {
         val c = makeConstraint(1.0, Double.POSITIVE_INFINITY)
         for (j in x.indices) {
@@ -72,17 +98,27 @@ private fun MPSolver.setIsVisitedConstraints(x: Array<Array<Array<MPVariable>>>)
     }
 }
 
-private fun MPSolver.setDegreeConstraints(x: Array<Array<Array<MPVariable>>>) {
-    for (i in x.indices) for (k in x.first().first().indices) {
+private fun MPSolver.makeNoSelfLoopsConstrain(x: Array<Array<Array<MPVariable>>>) {
+    for (k in x.first().first().indices) for (i in x.indices) {
         val c = makeConstraint(0.0, 0.0)
         c.setCoefficient(x[i][i][k], 1.0)
     }
+}
+
+private fun MPSolver.makeDiagonalConstraint(x: Array<Array<Array<MPVariable>>>) {
+    for (i in x.indices) for (j in x.indices) for (k in x[i][j].indices) {
+        val c = makeConstraint(0.0, .0)
+        c.setCoefficient(x[i][j][k], 1.0)
+        c.setCoefficient(x[j][i][k], -1.0)
+    }
+}
+
+private fun MPSolver.makeDegreeConstraints(x: Array<Array<Array<MPVariable>>>) {
+    val t = Array(x.size) { i -> Array(x[i][i].size) { j -> makeBoolVar("t[$i, $j]") } }
     for (k in x.first().first().indices) for (i in x.indices) {
-        val c3 = makeConstraint(Double.NEGATIVE_INFINITY, 2.0)
-        for (j in x[i].indices) {
-            c3.setCoefficient(x[i][j][k], 1.0)
-            if (i != j) c3.setCoefficient(x[j][i][k], 1.0)
-        }
+        val c3 = makeConstraint(0.0, 0.0)
+        for (j in x[i].indices) c3.setCoefficient(x[i][j][k], 1.0)
+        c3.setCoefficient(t[i][k], -2.0)
     }
 }
 
@@ -97,8 +133,7 @@ private fun MPSolver.makeNoSingleRouteConstraint(x: Array<Array<Array<MPVariable
     }
 }
 
-
-private fun MPSolver.setMaxDistanceConstraint(
+private fun MPSolver.makeMaxDistanceConstraint(
     z: MPVariable,
     x: Array<Array<Array<MPVariable>>>,
     d: Array<DoubleArray>,
@@ -110,23 +145,4 @@ private fun MPSolver.setMaxDistanceConstraint(
     }
 }
 
-
-inline fun <T> Array<Array<Array<T>>>.toListOfMatrices(f: (T) -> Boolean): List<Array<BooleanArray>> =
-    List(first().first().size) { k ->
-        Array(size) { i ->
-            BooleanArray(size) { j ->
-                f(get(i)[j][k])
-            }
-        }
-    }
-
-fun main() {
-    for (i in 1..10)
-        println(
-            VehicleRoutingProblemLinearProgramming().solve(
-                i,
-                Array(4) { DoubleArray(4) { 1.0 } },
-            )
-        )
-}
 

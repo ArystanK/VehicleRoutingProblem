@@ -1,3 +1,5 @@
+package data
+
 import org.jetbrains.exposed.dao.id.IntIdTable
 
 @kotlinx.serialization.Serializable

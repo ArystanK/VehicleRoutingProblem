@@ -1,6 +1,6 @@
 package database
 
-import BusStop
+import data.BusStop
 import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.transactions.transaction
 
@@ -80,5 +80,11 @@ object Database {
         }[routeId]?.map {
             it[RouteTable.nodeId]
         }
+    }
+
+    fun getLastRouteId(): Int = transaction {
+        addLogger(StdOutSqlLogger)
+        RouteTable.selectAll().orderBy(RouteTable.routeId, order = SortOrder.DESC).limit(1)
+            .map { it[RouteTable.routeId] }.first()
     }
 }

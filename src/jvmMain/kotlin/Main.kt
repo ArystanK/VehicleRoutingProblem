@@ -1,39 +1,50 @@
 import client_api.Point
 import client_api.Rectangle
-import genetic_algorithm.VehicleRoutingProblemGeneticAlgorithm
+import data.BusStop
+import data.BusStopsRepositoryImplementation
 import kotlinx.coroutines.runBlocking
+import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.decodeFromStream
 import kotlinx.serialization.json.encodeToJsonElement
+import data.VRPSolution
+import linear_programming.solveVRPLinearProgramming
 import java.io.File
 import kotlin.math.abs
 import kotlin.math.pow
 
 fun main() = runBlocking {
-    val result = File("RESULT.json")
-    result.writeText("")
+//    val result = File("RESULT.json")
+//    val solutions = Json.decodeFromStream<List<VRPSolution>>(result.inputStream())
     val coordinates = BusStopsRepositoryImplementation().getBusStops(
         Rectangle(
             Point(71.19865356830648, 51.28193274061607),
             Point(71.65595628500706, 50.996389716773805)
         )
     )
-
-    val distanceMatrix = generateDistanceMatrix(coordinates) { first, second ->
+    val numberOfNodes = 40
+    val numberOfRoutes = 15
+    val distanceMatrix = generateDistanceMatrix(coordinates, numberOfNodes) { first, second ->
         euclideanDistance(first.lat to first.lon, second.lat to second.lon)
     }
-    val solution = VehicleRoutingProblemGeneticAlgorithm(
-        numberOfRoutes = 10,
-        distMatrix = distanceMatrix,
-    ).solve()
-    result.appendText(Json.encodeToJsonElement(solution).toString())
+    val solution = solveVRPLinearProgramming(numberOfRoutes = numberOfRoutes, distMatrix = distanceMatrix)
+//    result.writeText(
+//        Json.encodeToJsonElement(solutions + VRPSolution(distanceMatrix, numberOfRoutes, solution)).toString()
+//    )
 }
 
 fun generateDistanceMatrix(
     busStops: List<BusStop>,
+    numberOfNodes: Int,
     distance: (BusStop, BusStop) -> Double,
 ): Array<DoubleArray> {
-    val result = Array(busStops.size) { DoubleArray(busStops.size) }
-    busStops.forEach { outer -> busStops.forEach { inner -> result[outer.id][inner.id] = distance(outer, inner) } }
+    val result = Array(numberOfNodes) { DoubleArray(numberOfNodes) }
+    result.indices.forEach { i ->
+        result.indices.forEach { j ->
+            result[i][j] = distance(busStops[i], busStops[j])
+        }
+    }
+//    busStops.forEach { outer -> busStops.forEach { inner -> result[outer.id][inner.id] = distance(outer, inner) } }
     return result
 }
 

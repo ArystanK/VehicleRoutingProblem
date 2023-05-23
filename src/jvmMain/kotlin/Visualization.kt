@@ -1,8 +1,9 @@
 import androidx.compose.desktop.ui.tooling.preview.Preview
+import androidx.compose.material.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
-import center.sciprog.maps.compose.MapViewScope
-import center.sciprog.maps.compose.OpenStreetMapTileProvider
+import center.sciprog.maps.compose.*
+import center.sciprog.maps.features.FeatureGroup
 import database.Database
 import io.ktor.client.*
 import io.ktor.client.engine.cio.*
@@ -22,45 +23,19 @@ fun App() {
         )
     }
     val viewScope = MapViewScope.remember(mapTileProvider)
-    val fitness = Database.getFitness()
-    val maxAvgFitness = fitness.maxBy { it.first }.first
-    val maxMaxFitness = fitness.maxBy { it.second }.second
-    val p = letsPlot(mapOf("average fitness" to fitness.map { it.first }))
-    (p + ggsize(700, 350)).show()
-//    MaterialTheme {
-//        Canvas(modifier = Modifier.fillMaxSize()) {
-//            val normFitness =
-//                fitness.map { (it.first / maxAvgFitness * 2 * size.height - 50) to (it.second / maxMaxFitness * 2 * size.height - 50) }
-//            val normAvgFitness = normFitness.map { it.first }
-//            val normMaxFitness = normFitness.map { it.second }
-//            drawPoints(
-//                points = normAvgFitness.withIndex().map {
-//                    Offset(
-//                        it.index.toFloat() / normAvgFitness.size * size.width + 20,
-//                        it.value.toFloat() - 2 * center.y
-//                    )
-//                },
-//                color = Color.Red,
-//                pointMode = PointMode.Polygon
-//            )
-//            drawPoints(
-//                points = normMaxFitness.withIndex().map {
-//                    Offset(
-//                        it.index.toFloat() / normMaxFitness.size * size.width + 20,
-//                        it.value.toFloat() - 2 * center.y
-//                    )
-//                },
-//                color = Color.Blue,
-//                pointMode = PointMode.Polygon
-//            )
-//        }
-////        MapView(
-////            viewScope = viewScope,
-////            features = FeatureGroup.build(WebMercatorSpace) {
-////
-////            }
-////        )
-//    }
+    val routes = Database.getAllRoutes()
+    val busStops = Database.getBusStops()
+    val points = routes.entries.map { it.value.map { index -> busStops.first { it.id == index } } }
+    MaterialTheme {
+        MapView(
+            viewScope = viewScope,
+            features = FeatureGroup.build(WebMercatorSpace) {
+                points.forEach {
+                    points(it.map { it.lat to it.lon })
+                }
+            }
+        )
+    }
 }
 
 //fun main() = application {
