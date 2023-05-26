@@ -1,3 +1,6 @@
+import kotlin.math.min
+import kotlin.math.sqrt
+
 fun <T> Array<Array<T>>.isConnected(exists: (T) -> Boolean): Boolean {
     val visited = BooleanArray(size)
     fun dfs(node: Int) {
@@ -21,6 +24,34 @@ fun <T> List<T>.order(order: List<Int>): List<T> {
     for (index in order) orderedList.add(this[index])
 
     return orderedList
+}
+
+fun <T> List<T>.filterClose(epsilon: Double, getX: (T) -> Double, getY: (T) -> Double): List<T> {
+    val filteredPoints = mutableListOf<T>()
+
+    for (i in indices) {
+        val currentPoint = this[i]
+        var isClose = false
+
+        for (j in i + 1 until size) {
+            val otherPoint = this[j]
+
+            val xDiff = getX(currentPoint) - getX(otherPoint)
+            val yDiff = getY(currentPoint) - getY(otherPoint)
+            val distance = sqrt(xDiff * xDiff + yDiff * yDiff)
+
+            if (distance <= epsilon) {
+                isClose = true
+                break
+            }
+        }
+
+        if (!isClose) {
+            filteredPoints.add(currentPoint)
+        }
+    }
+
+    return filteredPoints
 }
 
 inline fun <T> Array<Array<Array<T>>>.toListOfMatrices(f: (T) -> Boolean): List<Array<BooleanArray>> =
@@ -47,3 +78,13 @@ tailrec fun <T> uniqueIn(a: T, b: Collection<T>, f: () -> T): T {
 }
 
 fun Boolean.toInt(): Int = if (this) 1 else 0
+
+fun Int.toBoolean(): Boolean = this == 1
+
+fun IntArray.toBooleanArray(): BooleanArray = map { it.toBoolean() }.toBooleanArray()
+
+fun multiMin(vararg a: Double): Double {
+    if (a.size == 1) return a.first()
+    if (a.size == 2) return min(a.first(), a.last())
+    return multiMin(min(a.last(), a[a.lastIndex - 1]), *a.take(a.size - 2).toDoubleArray())
+}

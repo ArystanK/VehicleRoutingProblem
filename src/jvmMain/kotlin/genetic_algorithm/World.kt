@@ -21,7 +21,7 @@ class World(
                 numberOfRoutes = numberOfRoutes,
                 mutationRate = mutationRate,
                 initialRoutes = initialRoutes
-            )
+            ).let { if (initialRoutes == null) it else it.mutate() }
         }
     private var cumulativeProportions: List<Double> = updateCumulativeProportion()
 
@@ -62,10 +62,11 @@ class World(
     suspend fun solve() {
         repeat(generationSize) {
             onGeneration(tournamentSize = Random.nextInt((populationSize * 0.2).toInt(), populationSize))
-            val fitnesses = population.map { it.fitness }
+            val fitnessList = population.map { it.fitness }
             coroutineScope {
                 launch {
-                    Database.saveFitness(fitnesses.average() to fitnesses.max())
+                    val routeId = Database.getLastRouteId()
+                    Database.saveFitness(fitnessList.average() to fitnessList.max(), routeId + 1)
                 }
             }
         }

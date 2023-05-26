@@ -1,27 +1,33 @@
 import client_api.Point
 import client_api.Rectangle
 import data.BusStop
-import data.BusStopsRepositoryImplementation
+import data.BusStopsRepository
 import kotlinx.coroutines.runBlocking
 import linear_programming.solveVRPLinearProgramming
 import kotlin.math.abs
 import kotlin.math.pow
 
-fun main() = runBlocking {
+fun main(): Unit = runBlocking {
 //    val result = File("RESULT.json")
 //    val solutions = Json.decodeFromStream<List<VRPSolution>>(result.inputStream())
-    val coordinates = BusStopsRepositoryImplementation().getBusStops(
+    val coordinates = BusStopsRepository().getBusStops(
         Rectangle(
             Point(71.19865356830648, 51.28193274061607),
             Point(71.65595628500706, 50.996389716773805)
         )
     )
-    val numberOfNodes = 100
-    val numberOfRoutes = 15
+    val numberOfNodes = (coordinates.size * 0.1).toInt()
+    val numberOfRoutes = 1
     val distanceMatrix = generateDistanceMatrix(coordinates, numberOfNodes) { first, second ->
         euclideanDistance(first.lat to first.lon, second.lat to second.lon)
     }
-    val solution = solveVRPLinearProgramming(numberOfRoutes = numberOfRoutes, distMatrix = distanceMatrix)
+    solveVRPLinearProgramming(
+        numberOfRoutes,
+        distanceMatrix
+    )
+        .also { println(it.joinToString("\n\n") { it.joinToString("\n") { it.joinToString() } }) }
+
+//    VehicleRoutingProblemGeneticAlgorithm(numberOfRoutes = numberOfRoutes, distMatrix = distanceMatrix).solve()
 //    result.writeText(
 //        Json.encodeToJsonElement(solutions + VRPSolution(distanceMatrix, numberOfRoutes, solution)).toString()
 //    )

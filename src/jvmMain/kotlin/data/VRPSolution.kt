@@ -1,29 +1,60 @@
 package data
 
-import kotlinx.serialization.Serializable
+import toRoute
 
-@Serializable
-data class VRPSolution(
+sealed class VRPSolution(
     val distanceMatrix: Array<DoubleArray>,
     val numberOfRoutes: Int,
-    val solution: Array<Array<BooleanArray>>,
 ) {
-    override fun equals(other: Any?): Boolean {
-        if (this === other) return true
-        if (javaClass != other?.javaClass) return false
+    abstract fun toRoutes(): List<List<Int>>
+    data class ArrayVRPSolution(
+        val solution: Array<Array<BooleanArray>>,
+        private val _distanceMatrix: Array<DoubleArray>,
+        private val _numberOfRoutes: Int,
+    ) : VRPSolution(_distanceMatrix, _numberOfRoutes) {
+        override fun toRoutes(): List<List<Int>> = solution.map { it.toRoute() }
 
-        other as VRPSolution
+        override fun equals(other: Any?): Boolean {
+            if (this === other) return true
+            if (javaClass != other?.javaClass) return false
 
-        if (!distanceMatrix.contentDeepEquals(other.distanceMatrix)) return false
-        if (numberOfRoutes != other.numberOfRoutes) return false
-        return solution.contentDeepEquals(other.solution)
+            other as ArrayVRPSolution
+
+            if (!_distanceMatrix.contentDeepEquals(other._distanceMatrix)) return false
+            if (_numberOfRoutes != other._numberOfRoutes) return false
+            return solution.contentDeepEquals(other.solution)
+        }
+
+        override fun hashCode(): Int {
+            var result = _distanceMatrix.contentDeepHashCode()
+            result = 31 * result + _numberOfRoutes
+            result = 31 * result + solution.contentDeepHashCode()
+            return result
+        }
     }
 
-    override fun hashCode(): Int {
-        var result = distanceMatrix.contentDeepHashCode()
-        result = 31 * result + numberOfRoutes
-        result = 31 * result + solution.contentDeepHashCode()
-        return result
-    }
+    data class ListVRPSolution(
+        private val _distanceMatrix: Array<DoubleArray>,
+        private val _numberOfRoutes: Int,
+        val solution: List<List<Int>>,
+    ) : VRPSolution(_distanceMatrix, _numberOfRoutes) {
+        override fun toRoutes(): List<List<Int>> = solution
+        override fun equals(other: Any?): Boolean {
+            if (this === other) return true
+            if (javaClass != other?.javaClass) return false
 
+            other as ListVRPSolution
+
+            if (!_distanceMatrix.contentDeepEquals(other._distanceMatrix)) return false
+            if (_numberOfRoutes != other._numberOfRoutes) return false
+            return solution == other.solution
+        }
+
+        override fun hashCode(): Int {
+            var result = _distanceMatrix.contentDeepHashCode()
+            result = 31 * result + _numberOfRoutes
+            result = 31 * result + solution.hashCode()
+            return result
+        }
+    }
 }

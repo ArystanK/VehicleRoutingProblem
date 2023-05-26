@@ -22,8 +22,9 @@ class Routes private constructor(
 
     private val nodesVisited = routes.flatten().distinct()
 
+
     fun crossover(other: Routes): Pair<Routes, Routes> {
-        val (routes1, routes2) = Companion.crossover(routes, other.routes)
+        val (routes1, routes2) = Companion.routesCrossover(routes, other.routes)
         val r1 = ArrayList<List<Int>>()
         val r2 = ArrayList<List<Int>>()
         routes1.zip(routes2).forEach {
@@ -118,7 +119,7 @@ class Routes private constructor(
     companion object {
         private fun randomRoute(n: Int): List<Int> = (0 until Random.nextInt(2, n)).toList().shuffled()
 
-        private fun <T> crossover(route1: List<T>, route2: List<T>): Pair<List<T>, List<T>> {
+        fun crossover(route1: List<Int>, route2: List<Int>): Pair<List<Int>, List<Int>> {
             val splitPoint = Random.nextInt(min(route1.size, route2.size)) + 1
             val firstParentHead = route1.take(splitPoint)
             val firstParentHeadSet = firstParentHead.toSet()
@@ -129,5 +130,21 @@ class Routes private constructor(
             return r1 to r2
         }
 
+        fun routesCrossover(
+            routes1: List<List<Int>>,
+            routes2: List<List<Int>>,
+        ): Pair<List<List<Int>>, List<List<Int>>> {
+            val (first, second) = (routes1 + routes2).shuffled().chunked(routes1.size)
+            return first to second
+        }
     }
+}
+
+fun main() {
+    val (a, b) = Routes.routesCrossover(
+        listOf(listOf(1), listOf(2), listOf(3)),
+        listOf(listOf(4), listOf(5), listOf(6))
+    )
+    println(a)
+    println(b)
 }

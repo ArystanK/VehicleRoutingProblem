@@ -3,45 +3,28 @@ package linear_programming
 import com.google.ortools.Loader
 import com.google.ortools.linearsolver.MPSolver
 import com.google.ortools.linearsolver.MPVariable
-import database.Database
-import database.saveRouteToDatabase
-import kotlinx.coroutines.coroutineScope
 import toAdjacencyMatrices
-import toRoute
 
 suspend fun solveVRPLinearProgramming(
     numberOfRoutes: Int,
     distMatrix: Array<DoubleArray>,
 ): Array<Array<BooleanArray>> {
-    if (distMatrix.isEmpty()) return saveRouteToDatabase(
-        numberOfRoutes,
-        distMatrix,
-        emptyArray()
-    )
-    if (distMatrix.size == 1) return saveRouteToDatabase(
-        routes = Array(numberOfRoutes) {
-            if (it == 0) arrayOf(
-                booleanArrayOf(true)
-            ) else emptyArray()
-        },
-        numberOfRoutes = numberOfRoutes,
-        distMatrix = distMatrix
-    )
-    if (distMatrix.size == 2) return saveRouteToDatabase(
-        routes = Array(numberOfRoutes) {
-            if (it == 0) arrayOf(
-                booleanArrayOf(false, true),
-                booleanArrayOf(true, false)
-            ) else emptyArray()
-        },
-        numberOfRoutes = numberOfRoutes,
-        distMatrix = distMatrix
-    )
-    if (numberOfRoutes == 1) return saveRouteToDatabase(
-        routes = arrayOf(travelingSalesmanProblemLinearProgramming(distMatrix)),
-        distMatrix = distMatrix,
-        numberOfRoutes = numberOfRoutes
-    )
+    if (distMatrix.isEmpty()) return emptyArray<Array<BooleanArray>>()
+
+    if (distMatrix.size == 1) return Array(numberOfRoutes) {
+        if (it == 0) arrayOf(booleanArrayOf(true))
+        else emptyArray()
+    }
+
+    if (distMatrix.size == 2) return Array(numberOfRoutes) {
+        if (it == 0) arrayOf(
+            booleanArrayOf(false, true),
+            booleanArrayOf(true, false)
+        ) else emptyArray()
+    }
+
+    if (numberOfRoutes == 1) return arrayOf(travelingSalesmanProblemLinearProgramming(distMatrix))
+
     Loader.loadNativeLibraries()
     val solver = MPSolver.createSolver("SCIP")
 
@@ -57,14 +40,11 @@ suspend fun solveVRPLinearProgramming(
     solver.setObjective(z)
 
     val result = solver.solve()
-    if (result == MPSolver.ResultStatus.OPTIMAL) return saveRouteToDatabase(
-        routes = x.toAdjacencyMatrices { it.solutionValue() == 1.0 },
-        distMatrix = distMatrix,
-        numberOfRoutes = numberOfRoutes
-    )
+
+    if (result == MPSolver.ResultStatus.OPTIMAL) return x.toAdjacencyMatrices { it.solutionValue() == 1.0 }
+
     throw Exception("Infeasible solution")
 }
-
 
 
 private fun MPSolver.setObjective(z: MPVariable) {
