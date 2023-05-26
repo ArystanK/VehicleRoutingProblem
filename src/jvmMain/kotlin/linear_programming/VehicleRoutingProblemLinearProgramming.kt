@@ -3,9 +3,12 @@ package linear_programming
 import com.google.ortools.Loader
 import com.google.ortools.linearsolver.MPSolver
 import com.google.ortools.linearsolver.MPVariable
+import connectComponents
+import filterFalse
 import toAdjacencyMatrices
+import toDiagonalMatrix
 
-suspend fun solveVRPLinearProgramming(
+fun solveVRPLinearProgramming(
     numberOfRoutes: Int,
     distMatrix: Array<DoubleArray>,
 ): Array<Array<BooleanArray>> {
@@ -41,7 +44,9 @@ suspend fun solveVRPLinearProgramming(
 
     val result = solver.solve()
 
-    if (result == MPSolver.ResultStatus.OPTIMAL) return x.toAdjacencyMatrices { it.solutionValue() == 1.0 }
+    if (result == MPSolver.ResultStatus.OPTIMAL) return x.toAdjacencyMatrices { it.solutionValue() == 1.0 }.map {
+        it.filterFalse().connectComponents(distMatrix).toDiagonalMatrix()
+    }.toTypedArray()
 
     throw Exception("Infeasible solution")
 }

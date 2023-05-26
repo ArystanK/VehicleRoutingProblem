@@ -63,7 +63,7 @@ class VRPLPTest {
     }
 
     @Test
-    fun testThreeRouteEightByEightSolution(): Unit = runBlocking {
+    fun testTwoRouteTenByTenSolution() {
         val d = sqrt(2 + cos(108 * PI / 180))
         solveVRPLinearProgramming(
             numberOfRoutes = 2,
