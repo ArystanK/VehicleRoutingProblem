@@ -1,5 +1,6 @@
 package data.client_api
 
+import Rectangle
 import io.ktor.client.*
 import io.ktor.client.call.*
 import io.ktor.client.engine.cio.*
@@ -33,6 +34,3 @@ object BusStopsClient {
     }
 }
 
-data class Point(val x: Double, val y: Double)
-
-data class Rectangle(val a: Point, val b: Point)

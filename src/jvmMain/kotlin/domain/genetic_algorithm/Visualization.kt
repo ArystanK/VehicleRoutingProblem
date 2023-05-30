@@ -6,7 +6,7 @@ import org.jetbrains.letsPlot.geom.geomPoint
 import org.jetbrains.letsPlot.letsPlot
 
 fun main() {
-    val fitness = VRPDatabase.getAllFitness().groupBy { it.fitnessListId }
+    val fitness = VRPDatabase.getAllFitness().groupBy { it.fitnessList }
     val data = fitness.entries.map {
         mapOf(
             "average fitness" to it.value.map { it.avgFitness },

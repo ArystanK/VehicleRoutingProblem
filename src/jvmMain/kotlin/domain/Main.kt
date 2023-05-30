@@ -1,9 +1,11 @@
 package domain
 
-import data.BusStop
-import data.toBusStop
+
+import Point
+import Rectangle
 import domain.linear_programming.solveVRPLinearProgramming
 import domain.linear_programming.toRoute
+import domain.poko.BusStop
 import domain.repository.BusStopsRepository
 import domain.repository.RoutesRepository
 import kotlinx.coroutines.runBlocking
@@ -13,28 +15,40 @@ import kotlin.math.pow
 fun main(): Unit = runBlocking {
 //    val result = File("RESULT.json")
 //    val solutions = Json.decodeFromStream<List<VRPSolution>>(result.inputStream())
-    val busStopsId = 0
-    val coordinates = BusStopsRepository().getBusStops().filter { it.busStopsCollection.id.value == busStopsId }
-    val numberOfNodes = coordinates.size
-    val numberOfRoutes = 1
-    val distanceMatrix = generateDistanceMatrix(coordinates.map { it.toBusStop() }, numberOfNodes) { first, second ->
-        euclideanDistance(first.lat to first.lon, second.lat to second.lon)
-    }
+    val busStopsId = 1
+    BusStopsRepository()
+        .getBusStops(
+            Rectangle(
+                Point(71.19865356830648, 61.28193274061607),
+                Point(71.65595628500706, 60.996389716773805)
+            )
+        ).onSuccess {
+            val coordinates = it
+                .groupBy { it.busStops.id }
+                .getOrDefault(busStopsId, emptyList())
+            println(coordinates.size)
+            val numberOfNodes = 30
+            val numberOfRoutes = 1
+            val distanceMatrix =
+                generateDistanceMatrix(coordinates, numberOfNodes) { first, second ->
+                    euclideanDistance(first.lat to first.lon, second.lat to second.lon)
+                }
+            val routesRepository = RoutesRepository()
+            val startTime = System.nanoTime()
 //    val routes = VehicleRoutingProblemGeneticAlgorithm(distanceMatrix, numberOfRoutes).solve()
-    val routesRepository = RoutesRepository()
-    val startTime = System.nanoTime()
-    val routes = solveVRPLinearProgramming(
-        numberOfRoutes,
-        distanceMatrix
-    ).map { it.toRoute() }
-    val endTime = System.nanoTime()
-    println(routes)
-    println(endTime - startTime)
-    routesRepository.safeSolution(routes, busStopsId)
+            val routes = solveVRPLinearProgramming(
+                numberOfRoutes,
+                distanceMatrix
+            ).map { it.toRoute() }
+
+            val endTime = System.nanoTime()
+            println(endTime - startTime)
+            routesRepository.safeSolution(routes, busStopsId)
 //    VehicleRoutingProblemGeneticAlgorithm(numberOfRoutes = numberOfRoutes, distMatrix = distanceMatrix).solve()
 //    result.writeText(
 //        Json.encodeToJsonElement(solutions + VRPSolution(distanceMatrix, numberOfRoutes, solution)).toString()
 //    )
+        }
 }
 
 fun generateDistanceMatrix(

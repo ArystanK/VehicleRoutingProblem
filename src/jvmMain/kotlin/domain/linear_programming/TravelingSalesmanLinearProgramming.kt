@@ -8,11 +8,8 @@ import kotlin.random.Random
 
 fun travelingSalesmanProblemLinearProgramming(distanceMatrix: Array<DoubleArray>): Array<BooleanArray> {
     if (distanceMatrix.size == 2) return arrayOf(booleanArrayOf(false, true), booleanArrayOf(true, false))
-//    mapOf(0 to mapOf(0 to false, 1 to true), 1 to mapOf(0 to true, 1 to false))
     if (distanceMatrix.size == 1) return arrayOf(booleanArrayOf(true))
-//    mapOf(0 to mapOf(0 to true))
     if (distanceMatrix.isEmpty()) return emptyArray()
-//    emptyMap()
 
     fun MPSolver.setNoSelfLoopConstraint(x: Array<Array<MPVariable>>) {
         for (i in x.indices) {
@@ -56,7 +53,6 @@ fun travelingSalesmanProblemLinearProgramming(distanceMatrix: Array<DoubleArray>
             }
         }
     }
-
 
     fun Array<Array<MPVariable>>.toAdjacencyMatrix(): Array<BooleanArray> =
         Array(size) { i -> BooleanArray(size) { j -> this[i][j].solutionValue() == 1.0 } }

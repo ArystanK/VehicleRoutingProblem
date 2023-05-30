@@ -1,23 +1,25 @@
 package data.database
 
-import data.BusStop
+import Rectangle
+import data.database.entities.*
+import data.database.entities.BusStopTable
+import domain.poko.BusStop
+import domain.poko.Route
+import domain.poko.toBusStop
+import domain.poko.toRoute
 import org.jetbrains.exposed.dao.id.EntityID
-import org.jetbrains.exposed.sql.Database
-import org.jetbrains.exposed.sql.SchemaUtils
-import org.jetbrains.exposed.sql.exists
+import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.transactions.TransactionManager
 import org.jetbrains.exposed.sql.transactions.transaction
 import java.sql.Connection
 
 object VRPDatabase {
-    private val database: Database by lazy {
-        Database.connect(
-            url = "jdbc:postgresql://localhost/vrp_database",
-            driver = "org.postgresql.Driver",
-            user = "postgres",
-            password = "qwerty"
-        )
-    }
+    private val database: Database = Database.connect(
+        url = "jdbc:postgresql://localhost/vrp_database",
+        driver = "org.postgresql.Driver",
+        user = "postgres",
+        password = "qwerty"
+    )
 
     init {
         TransactionManager.manager.defaultIsolationLevel = Connection.TRANSACTION_SERIALIZABLE
@@ -26,6 +28,7 @@ object VRPDatabase {
 
     private fun setup() {
         transaction(database) {
+            addLogger(StdOutSqlLogger)
             if (!BusStopsTable.exists()) SchemaUtils.create(BusStopsTable)
             if (!BusStopTable.exists()) SchemaUtils.create(BusStopTable)
             if (!FitnessListTable.exists()) SchemaUtils.create(FitnessListTable)
@@ -35,145 +38,220 @@ object VRPDatabase {
         }
     }
 
-    fun createBusStops(): BusStopsEntity = transaction(database) { BusStopsEntity.new { } }
+    fun createBusStops(searchBox: Rectangle): BusStops = transaction(database) {
+        addLogger(StdOutSqlLogger)
+        val busStopEntity = BusStopsEntity.find {
+            (BusStopsTable.startSearchBoxLatitude eq searchBox.a.x) and
+                    (BusStopsTable.startSearchBoxLongitude eq searchBox.a.y) and
+                    (BusStopsTable.endSearchBoxLatitude eq searchBox.b.x) and
+                    (BusStopsTable.endSearchBoxLongitude eq searchBox.b.y)
+        }.firstOrNull()
+        if (busStopEntity != null) return@transaction busStopEntity.toBusStops()
+        BusStopsEntity.new {
+            this.startSearchBoxLatitude = searchBox.a.x
+            this.startSearchBoxLongitude = searchBox.a.y
+            this.endSearchBoxLatitude = searchBox.b.x
+            this.endSearchBoxLongitude = searchBox.b.y
+        }.toBusStops()
+    }
 
-    fun getBusStopsById(id: Int): BusStopsEntity? =
-        transaction(database) { BusStopsEntity.findById(id) }
+    fun getBusStopsById(id: Int): BusStops? =
+        transaction(database) {
+            addLogger(StdOutSqlLogger)
+            BusStopsEntity.findById(id)?.toBusStops()
+        }
 
-    fun getAllBusStopCollections(): List<BusStopsEntity> =
-        transaction(database) { BusStopsEntity.all().toList() }
+    fun getAllBusStopCollections(): List<BusStops> =
+        transaction(database) {
+            addLogger(StdOutSqlLogger)
+            BusStopsEntity.all().map { it.toBusStops() }
+        }
 
     fun deleteBusStops(id: Int) = transaction(database) {
+        addLogger(StdOutSqlLogger)
         BusStopsEntity.findById(id)?.delete()
     }
 
     fun createBusStop(
-        busStopsCollectionId: Int,
+        id: Int,
+        busStops: BusStops,
         latitude: Double,
         longitude: Double,
         address: String,
-    ): BusStopEntity = transaction(database) {
-        BusStopEntity.new {
-            this.busStopsCollection =
-                BusStopsEntity(EntityID(busStopsCollectionId, BusStopsTable))
+    ): BusStop = transaction(database) {
+        addLogger(StdOutSqlLogger)
+        BusStopEntity.new(id) {
+            this.busStops = BusStopsEntity(EntityID(busStops.id!!, BusStopsTable)).apply {
+                db = database
+                klass = BusStopsEntity
+            }
             this.latitude = latitude
             this.longitude = longitude
             this.address = address
-        }
+        }.toBusStop()
     }
+
 
     fun createMultipleBusStops(
         busStops: List<BusStop>,
-        busStopsId: Int,
-    ): List<BusStopEntity> = transaction(database) {
+    ): List<BusStop> = transaction(database) {
+        addLogger(StdOutSqlLogger)
         busStops.map {
-            BusStopEntity.new {
-                this.latitude = it.lat
-                this.longitude = it.lon
-                this.busStopsCollection = BusStopsEntity(EntityID(busStopsId, BusStopsTable))
-                this.address = it.address
-            }
+            createBusStop(
+                busStops = it.busStops,
+                latitude = it.lat,
+                longitude = it.lon,
+                address = it.address,
+                id = it.id
+            )
         }
     }
 
-    fun getBusStopById(id: Int): BusStopEntity? = transaction(database) { BusStopEntity.findById(id) }
+    fun getBusStopById(id: Int): BusStop? = transaction(database) {
+        addLogger(StdOutSqlLogger)
+        BusStopEntity.findById(id)?.toBusStop()
+    }
 
-    fun getAllBusStops(): List<BusStopEntity> = transaction(database) { BusStopEntity.all().toList() }
+    fun getAllBusStops(): List<BusStop> = transaction(database) {
+        addLogger(StdOutSqlLogger)
+        BusStopEntity.all().map { it.toBusStop() }
+    }
 
     fun updateBusStop(id: Int, latitude: Double, longitude: Double, address: String) = transaction(database) {
+        addLogger(StdOutSqlLogger)
         val busStop = BusStopEntity.findById(id)
         busStop?.latitude = latitude
         busStop?.longitude = longitude
         busStop?.address = address
     }
 
-    fun deleteBusStop(id: Int) = transaction(database) { BusStopEntity.findById(id)?.delete() }
+    fun deleteBusStop(id: Int) = transaction(database) {
+        addLogger(StdOutSqlLogger)
+        BusStopEntity.findById(id)?.delete()
+    }
 
-    fun createFitnessList(busStopsCollectionId: Int): FitnessListEntity = transaction(database) {
+    fun createFitnessList(busStops: BusStops): FitnessList = transaction(database) {
+        addLogger(StdOutSqlLogger)
         FitnessListEntity.new {
-            this.busStops = BusStopsEntity(EntityID(busStopsCollectionId, BusStopsTable))
-        }
+            this.busStops = BusStopsEntity(EntityID(busStops.id!!, BusStopsTable))
+        }.toFitnessList()
     }
 
-    fun getFitnessListById(id: Int): FitnessListEntity? = transaction(database) {
-        FitnessListEntity.findById(id)
+    fun getFitnessListById(id: Int): FitnessList? = transaction(database) {
+        addLogger(StdOutSqlLogger)
+        FitnessListEntity.findById(id)?.toFitnessList()
     }
 
-    fun getAllFitnessList(): List<FitnessListEntity> = transaction(database) {
-        FitnessListEntity.all().toList()
+    fun getAllFitnessList(): List<FitnessList> = transaction(database) {
+        addLogger(StdOutSqlLogger)
+        FitnessListEntity.all().map { it.toFitnessList() }
     }
 
-    fun updateFitnessList(id: Int, busStopsId: Int) = transaction(database) {
+    fun updateFitnessList(id: Int, busStops: BusStops) = transaction(database) {
+        addLogger(StdOutSqlLogger)
         val fitnessListEntity = FitnessListEntity.findById(id)
-        fitnessListEntity?.busStops =
-            BusStopsEntity(EntityID(busStopsId, BusStopsTable))
+        fitnessListEntity?.busStops = BusStopsEntity(EntityID(busStops.id!!, BusStopsTable))
     }
 
-    fun deleteFitnessList(id: Int) = transaction(database) { FitnessListEntity.findById(id)?.delete() }
+    fun deleteFitnessList(id: Int) = transaction(database) {
+        addLogger(StdOutSqlLogger)
+        FitnessListEntity.findById(id)?.delete()
+    }
 
-    fun createFitness(fitnessListId: Int, maxFitness: Double, avgFitness: Double): FitnessEntity = transaction(database) {
-        FitnessEntity.new {
-            this.fitnessListId = FitnessListEntity(EntityID(fitnessListId, FitnessListTable))
-            this.maxFitness = maxFitness
-            this.avgFitness = avgFitness
+    fun createFitness(fitnessList: FitnessList, maxFitness: Double, avgFitness: Double): Fitness =
+        transaction(database) {
+            addLogger(StdOutSqlLogger)
+            FitnessEntity.new {
+                this.fitnessList = FitnessListEntity(fitnessList.id)
+                this.maxFitness = maxFitness
+                this.avgFitness = avgFitness
+            }.toFitness()
         }
 
+    fun getFitnessById(id: Int): Fitness? = transaction(database) {
+        addLogger(StdOutSqlLogger)
+        FitnessEntity.findById(id)?.toFitness()
     }
 
-    fun getFitnessById(id: Int): FitnessEntity? = transaction(database) { FitnessEntity.findById(id) }
-
-    fun getAllFitness(): List<FitnessEntity> = transaction(database) { FitnessEntity.all().toList() }
+    fun getAllFitness(): List<Fitness> = transaction(database) {
+        addLogger(StdOutSqlLogger)
+        FitnessEntity.all().map { it.toFitness() }
+    }
 
     fun updateFitness(id: Int, maxFitness: Double, avgFitness: Double) = transaction(database) {
+        addLogger(StdOutSqlLogger)
         val fitness = FitnessEntity.findById(id)
         fitness?.maxFitness = maxFitness
         fitness?.avgFitness = avgFitness
     }
 
-    fun deleteFitness(id: Int) = transaction(database) { FitnessEntity.findById(id)?.delete() }
-
-    fun createRouteList(busStopsId: Int): RouteListEntity = transaction(database) {
-        RouteListEntity.new {
-            this.busStops = BusStopsEntity(EntityID(busStopsId, BusStopsTable))
-        }
+    fun deleteFitness(id: Int) = transaction(database) {
+        addLogger(StdOutSqlLogger)
+        FitnessEntity.findById(id)?.delete()
     }
 
-    fun getRouteListById(id: Int): RouteListEntity? = transaction(database) { RouteListEntity.findById(id) }
+    fun createRouteList(busStops: BusStops): RouteList = transaction(database) {
+        addLogger(StdOutSqlLogger)
+        RouteListEntity.new {
+            this.busStops = BusStopsEntity(EntityID(busStops.id!!, BusStopsTable))
+        }.toRouteList()
+    }
 
-    fun getAllRouteLists(): List<RouteListEntity> = transaction(database) { RouteListEntity.all().toList() }
+    fun getRouteListById(id: Int): RouteList? = transaction(database) {
+        addLogger(StdOutSqlLogger)
+        RouteListEntity.findById(id)?.toRouteList()
+    }
 
-    fun updateRouteList(id: Int, busStopsId: Int) = transaction(database) {
+    fun getAllRouteLists(): List<RouteList> = transaction(database) {
+        addLogger(StdOutSqlLogger)
+        RouteListEntity.all().map { it.toRouteList() }
+    }
+
+    fun updateRouteList(id: Int, busStops: BusStops) = transaction(database) {
+        addLogger(StdOutSqlLogger)
         val routesList = RouteListEntity.findById(id)
-        routesList?.busStops = BusStopsEntity(EntityID(busStopsId, BusStopsTable))
+        routesList?.busStops = BusStopsEntity(EntityID(busStops.id!!, BusStopsTable))
     }
 
     fun deleteRouteList(id: Int) = transaction(database) {
+        addLogger(StdOutSqlLogger)
         RouteListEntity.findById(id)?.delete()
     }
 
     // CRUD methods for Routes...
-    fun createRoute(routesListId: Int, busStopId: Int) = transaction(database) {
+    fun createRoute(routesList: RouteList, busStop: BusStop): Route = transaction(database) {
+        addLogger(StdOutSqlLogger)
         RouteEntity.new {
-            this.routes = RouteListEntity(EntityID(routesListId, RouteListTable))
-            this.busStop = BusStopEntity(EntityID(busStopId, BusStopTable))
+            this.routes = RouteListEntity(routesList.id)
+            this.busStop = BusStopEntity(EntityID(busStop.id, BusStopTable))
+        }.toRoute()
+    }
+
+    fun createMultipleRoutes(routesList: RouteList, busStops: List<BusStop>): List<Route> =
+        transaction(database) {
+            addLogger(StdOutSqlLogger)
+            busStops.map { createRoute(routesList, it) }
         }
+
+
+    fun getRouteById(id: Int): Route? = transaction(database) {
+        addLogger(StdOutSqlLogger)
+        RouteEntity.findById(id)?.toRoute()
     }
 
-    fun createMultipleRoutes(routesListId: Int, busStopIds: List<Int>) = transaction(database) {
-        busStopIds.map { createRoute(routesListId, it) }
+    fun getAllRoutes(): List<Route> = transaction(database) {
+        addLogger(StdOutSqlLogger)
+        RouteEntity.all().map { it.toRoute() }
     }
-
-
-    fun getRouteById(id: Int): RouteEntity? = transaction(database) { RouteEntity.findById(id) }
-
-    fun getAllRoutes(): List<RouteEntity> = transaction(database) { RouteEntity.all().toList() }
 
     fun updateRoute(id: Int, busStopId: Int) = transaction(database) {
+        addLogger(StdOutSqlLogger)
         val route = RouteEntity.findById(id)
         route?.busStop = BusStopEntity(EntityID(busStopId, BusStopTable))
     }
 
     fun deleteRoute(id: Int) = transaction(database) {
+        addLogger(StdOutSqlLogger)
         RouteEntity.findById(id)?.delete()
     }
 }

@@ -1,6 +1,13 @@
 import kotlin.math.min
 import kotlin.math.sqrt
 
+data class Point(val x: Double, val y: Double)
+
+data class Rectangle(val a: Point, val b: Point) {
+    operator fun contains(position: Pair<Double, Double>): Boolean =
+        position.first in a.x..b.x && position.second in a.y..b.y
+}
+
 
 // route = [1, 7, 5, 3]
 // nodes = [4, 1, 4, 2]
@@ -76,7 +83,6 @@ fun <T : Comparable<T>> List<T>.myBinarySearch(value: T): Int {
 
     return result
 }
-
 
 
 fun Boolean.toInt(): Int = if (this) 1 else 0

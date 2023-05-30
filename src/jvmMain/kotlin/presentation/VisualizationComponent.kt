@@ -1,5 +1,6 @@
 package presentation
 
+import domain.repository.BusStopsRepository
 import domain.repository.RoutesRepository
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -11,29 +12,49 @@ import kotlinx.coroutines.launch
 
 class VisualizationComponent(
     private val routesRepository: RoutesRepository,
+    private val busStopsRepository: BusStopsRepository,
 ) {
     private val _state = MutableStateFlow(VisualizationState())
     val state = _state.asStateFlow()
 
     init {
         CoroutineScope(Dispatchers.IO).launch {
-            val routes = routesRepository.getRoutes().groupBy { it.routes }
-            _state.update {
-                it.copy(
-                )
+            routesRepository.getRoutes().onSuccess { routes ->
+                busStopsRepository.getBusStops().onSuccess { busStops ->
+                    _state.update {
+                        it.copy(
+                            busStops = busStops.groupBy { it.busStops },
+                            routes = routes.groupBy { it.routes }
+                        )
+                    }
+
+                }
             }
+
         }
     }
 
     fun reduce(intent: VisualizationIntent) {
         when (intent) {
             is VisualizationIntent.RouteShowIntent -> {
-                _state.update { state ->
-                    state.copy(
-                        routesShown = if (intent.routeId in state.routesShown)
-                            state.routesShown - intent.routeId
-                        else state.routesShown + intent.routeId
-                    )
+                CoroutineScope(Dispatchers.IO).launch {
+                    routesRepository.getRouteById(intent.routeId).onSuccess {
+                        _state.update { state ->
+                            val isRouteListAlreadySelected = it in state.routesShown
+                            val newRoutesShown =
+                                if (!isRouteListAlreadySelected) state.routesShown + it else state.routesShown - it
+                            state.copy(
+                                routesShown = newRoutesShown
+                            )
+                        }
+                    }
+
+                }
+            }
+
+            is VisualizationIntent.BusStopsPickIntent -> {
+                _state.update {
+                    it.copy(busStopsId = intent.busStopsId)
                 }
             }
         }

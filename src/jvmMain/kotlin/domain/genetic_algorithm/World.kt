@@ -69,17 +69,18 @@ class World(
     }
 
     suspend fun solve() {
-        val fitnessListEntity = fitnessRepository.safeFitnessList(busStopId)
-        repeat(generationSize) {
-            onGeneration()
-            val fitnessList = population.map { it.fitness }
-            coroutineScope {
-                launch {
-                    fitnessRepository.safeFitness(
-                        fitnessListId = fitnessListEntity.id.value,
-                        avgFitness = fitnessList.average(),
-                        maxFitness = fitnessList.max()
-                    )
+        fitnessRepository.safeFitnessList(busStopId).onSuccess { fitnessListObject ->
+            repeat(generationSize) {
+                onGeneration()
+                val fitnessList = population.map { it.fitness }
+                coroutineScope {
+                    launch {
+                        fitnessRepository.safeFitness(
+                            fitnessList = fitnessListObject,
+                            avgFitness = fitnessList.average(),
+                            maxFitness = fitnessList.max()
+                        )
+                    }
                 }
             }
         }

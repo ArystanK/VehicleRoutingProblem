@@ -1,4 +1,4 @@
-package presentation
+package presentation.components
 
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.layout.PaddingValues
@@ -12,15 +12,18 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.unit.dp
+import data.database.entities.RouteList
+import domain.poko.Route
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
-fun <T> RouteTable(
+fun RouteTable(
     modifier: Modifier = Modifier,
-    routes: List<T>,
-    shownRoutes: List<T>,
+    routes: List<Route>,
+    shownRoutes: List<RouteList>,
     onRouteSelected: (Int) -> Unit,
 ) {
+    val selectedRoutes = routes.filter { it.routes in shownRoutes }
     LazyVerticalStaggeredGrid(
         columns = StaggeredGridCells.Fixed(10),
         modifier = modifier,
@@ -30,7 +33,7 @@ fun <T> RouteTable(
             Button(
                 onClick = { onRouteSelected(it) },
                 shape = RectangleShape,
-                colors = ButtonDefaults.buttonColors(backgroundColor = if (routes[it] in shownRoutes) Color.Gray else Color.Blue)
+                colors = ButtonDefaults.buttonColors(backgroundColor = if (routes[it] in selectedRoutes) Color.Gray else Color.Blue)
             ) {
                 Text(it.toString())
             }

@@ -1,27 +1,51 @@
 package domain.repository
 
-import data.BusStop
+import Point
+import Rectangle
 import data.client_api.BusStopsClient
 import data.client_api.Feature
-import data.client_api.Point
-import data.client_api.Rectangle
-import data.database.BusStopEntity
 import data.database.VRPDatabase
+import data.database.entities.BusStops
+import domain.AstanaArea
+import domain.numberOfBusStopsInAstana
+import domain.poko.BusStop
 import filterClose
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.asFlow
 import kotlinx.coroutines.flow.buffer
 import kotlinx.coroutines.flow.fold
 import kotlinx.coroutines.flow.map
 
 class BusStopsRepository {
-    suspend fun getBusStops(
-        searchBox: Rectangle = Rectangle(
-            Point(71.19865356830648, 51.28193274061607),
-            Point(71.65595628500706, 50.996389716773805)
-        ),
-    ): List<BusStopEntity> {
-        val data = VRPDatabase.getAllBusStops()
-        if (data.isNotEmpty()) return data
+    private val database = VRPDatabase
+    suspend fun getBusStops(searchBox: Rectangle = AstanaArea): Result<List<BusStop>> = coroutineScope {
+        val groupedBusStops = database.getAllBusStops().groupBy { it.busStops }
+        val busStopsKey = BusStops(
+            startSearchBoxLatitude = searchBox.a.x,
+            startSearchBoxLongitude = searchBox.a.y,
+            endSearchBoxLatitude = searchBox.b.x,
+            endSearchBoxLongitude = searchBox.b.y
+        )
+        val busStopsKeyOfAstana = BusStops(
+            startSearchBoxLatitude = AstanaArea.a.x,
+            startSearchBoxLongitude = AstanaArea.a.y,
+            endSearchBoxLatitude = AstanaArea.b.x,
+            endSearchBoxLongitude = AstanaArea.b.y
+        )
+        val allBusStops = groupedBusStops[busStopsKeyOfAstana] ?: return@coroutineScope requestFromApi(searchBox)
+        if (allBusStops.size != numberOfBusStopsInAstana) return@coroutineScope requestFromApi(searchBox)
+        val busStopsInSearchBox = groupedBusStops[busStopsKey]
+        if (busStopsInSearchBox == null) {
+            val busStops = database.createBusStops(searchBox)
+            val busStopsInSearchRegion =
+                allBusStops.filter { it.toLocationPair() in searchBox }.map { it.copy(busStops = busStops) }
+            return@coroutineScope Result.success(database.createMultipleBusStops(busStopsInSearchRegion))
+        }
+
+        Result.success(busStopsInSearchBox)
+    }
+
+    private suspend fun requestFromApi(searchBox: Rectangle): Result<List<BusStop>> = coroutineScope {
         val busStopFeatures = searchBox.partition(3)
             .asFlow()
             .buffer()
@@ -34,19 +58,17 @@ class BusStopsRepository {
                 getY = { it.geometry.coordinates.last() }
             )
 
+        val busStopsEntity = database.createBusStops(searchBox)
         val busStops = busStopFeatures.mapIndexed { index, feature ->
             BusStop(
                 lat = feature.geometry.coordinates.last(),
                 lon = feature.geometry.coordinates.first(),
                 address = feature.properties.CompanyMetaData.address,
-                id = index
+                id = index,
+                busStops = busStopsEntity
             )
         }
-        val busStopsEntity = VRPDatabase.createBusStops()
-        return VRPDatabase.createMultipleBusStops(
-            busStops = busStops,
-            busStopsId = busStopsEntity.id.value
-        )
+        Result.success(database.createMultipleBusStops(busStops = busStops))
     }
 
     private fun Rectangle.partition(n: Int): List<Rectangle> {

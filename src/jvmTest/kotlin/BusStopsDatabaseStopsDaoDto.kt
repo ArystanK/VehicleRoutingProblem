@@ -3,7 +3,7 @@ import domain.repository.BusStopsRepository
 import kotlinx.coroutines.runBlocking
 import org.junit.Test
 
-class BusStopsDatabaseStopsDao {
+class BusStopsDatabaseStopsDaoDto {
     @Test
     fun getBusStopsTest() {
         println(VRPDatabase.getAllBusStops())
@@ -12,6 +12,6 @@ class BusStopsDatabaseStopsDao {
     @Test
     fun getBusStopsRepositoryTest() = runBlocking {
         val repository = BusStopsRepository()
-        println(repository.getBusStops())
+        val bs = repository.getBusStops()
     }
 }
