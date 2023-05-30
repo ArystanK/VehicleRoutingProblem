@@ -20,11 +20,3 @@ class RouteListEntity(id: EntityID<Int>) : IntEntity(id) {
     var type by RouteListTable.type
     var busStops by BusStopsEntity referencedOn RouteListTable.busStopsId
 }
-
-fun RouteListEntity.toRouteList() = RouteList(
-    id = id.value,
-    type = type,
-    busStops = busStops.toBusStops()
-)
-
-data class RouteList(val id: Int, val type: String, val busStops: BusStops)

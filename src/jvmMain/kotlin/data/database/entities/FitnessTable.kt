@@ -21,12 +21,3 @@ class FitnessEntity(id: EntityID<Int>) : IntEntity(id) {
     var maxFitness by FitnessTable.maxFitness
     var avgFitness by FitnessTable.avgFitness
 }
-
-fun FitnessEntity.toFitness() = Fitness(
-    id = id.value,
-    fitnessList = fitnessList.toFitnessList(),
-    maxFitness = maxFitness,
-    avgFitness = avgFitness
-)
-
-data class Fitness(val id: Int, val fitnessList: FitnessList, val maxFitness: Double, val avgFitness: Double)

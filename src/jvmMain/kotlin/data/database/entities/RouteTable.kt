@@ -11,9 +11,6 @@ internal object RouteTable : IntIdTable("route") {
 }
 
 class RouteEntity(id: EntityID<Int>) : IntEntity(id) {
-
-    constructor(id: Int) : this(EntityID(id, RouteTable))
-
     companion object : IntEntityClass<RouteEntity>(RouteTable)
 
     var routes by RouteListEntity referencedOn RouteTable.routes

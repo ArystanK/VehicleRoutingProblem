@@ -22,4 +22,3 @@ class BusStopEntity(id: EntityID<Int>) : IntEntity(id) {
     var longitude by BusStopTable.longitude
     var address by BusStopTable.address
 }
-

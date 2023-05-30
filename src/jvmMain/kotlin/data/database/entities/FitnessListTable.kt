@@ -18,10 +18,3 @@ class FitnessListEntity(id: EntityID<Int>) : IntEntity(id) {
 
     var busStops by BusStopsEntity referencedOn FitnessListTable.busStopsId
 }
-
-fun FitnessListEntity.toFitnessList() = FitnessList(
-    id = id.value,
-    busStops = busStops.toBusStops()
-)
-
-data class FitnessList(val id: Int, val busStops: BusStops)
