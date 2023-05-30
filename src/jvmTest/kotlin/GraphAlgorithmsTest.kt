@@ -1,3 +1,4 @@
+import domain.linear_programming.*
 import kotlin.math.sqrt
 import kotlin.test.Test
 import kotlin.test.assertEquals

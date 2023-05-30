@@ -1,0 +1,60 @@
+{
+  "bus_stops_collection": [
+    {
+      "bus_stops_collection_id": 1,
+      "type": "GA",
+      "bus_stops": [
+        {
+          "bus_stop_id": 1,
+          "latitude": 20.0,
+          "longitude": 20.0
+        },
+        {
+          "bus_stop_id": 2,
+          "latitude": 26.0,
+          "longitude": 20.0
+        }
+      ]
+    },
+    {
+      "bus_stops_collection_id": 1,
+      "type": "LP",
+      "bus_stops": [
+        {
+          "id": 1,
+          "latitude": 20.0,
+          "longitude": 20.0
+        },
+        {
+          "id": 2,
+          "latitude": 26.0,
+          "longitude": 20.0
+        }
+      ]
+    }
+  ],
+  "fitness_collection_list": [
+    {
+      "fitness_list_id": 1,
+      "bus_stops_collection_id": 1,
+      "fitness_list": [
+        {
+          "fitness_id": 1,
+          "max_fitness": 2.0,
+          "avg_fitness": 4.0
+        }
+      ]
+    }
+  ],
+  "routes_list": [
+    {
+      "routes_id": 1,
+      "source": "GA",
+      "bus_stops_collection_id": 1,
+      "routes": {
+        "route_id": 1,
+        "bus_stop_id": 1
+      }
+    }
+  ]
+}

@@ -1,17 +1,6 @@
 import kotlin.math.min
 import kotlin.math.sqrt
 
-fun <T> Array<Array<T>>.isConnected(exists: (T) -> Boolean): Boolean {
-    val visited = BooleanArray(size)
-    fun dfs(node: Int) {
-        visited[node] = true
-        for (neighbor in indices)
-            if (exists(this[node][neighbor]) && !visited[neighbor])
-                dfs(neighbor)
-    }
-    dfs(0)
-    return visited.all { it }
-}
 
 // route = [1, 7, 5, 3]
 // nodes = [4, 1, 4, 2]
@@ -54,28 +43,41 @@ fun <T> List<T>.filterClose(epsilon: Double, getX: (T) -> Double, getY: (T) -> D
     return filteredPoints
 }
 
-inline fun <T> Array<Array<Array<T>>>.toListOfMatrices(f: (T) -> Boolean): List<Array<BooleanArray>> =
-    List(first().first().size) { k ->
-        Array(size) { i ->
-            BooleanArray(size) { j ->
-                f(get(i)[j][k])
-            }
+tailrec fun <T> unique(a: T, b: T, count: Int = 0, f: () -> T): T {
+    if (count == 10) return a
+    if (a != b) return a
+    return unique(f(), b, count + 1, f)
+}
+
+tailrec fun <T> uniqueIn(a: T, b: Collection<T>, count: Int = 0, f: () -> T): T {
+    if (count == 10) return a
+    if (a !in b) return a
+    return uniqueIn(f(), b, count + 1, f)
+}
+
+fun <T : Comparable<T>> List<T>.myBinarySearch(value: T): Int {
+    var left = 0
+    var right = size - 1
+    var result = -1
+
+    while (left <= right) {
+        val mid = (left + right) / 2
+        val midValue = this[mid]
+
+        if (midValue == value) {
+            return mid // Exact match found
+        } else if (midValue < value) {
+            result = mid // Keep track of the latest index that is less than the searched value
+            left = mid + 1
+        } else {
+            right = mid - 1
         }
     }
 
-fun List<Pair<Int, Int>>.flatten(): List<Int> {
-    return map { listOf(it.first, it.second) }.flatten()
+    return result
 }
 
-tailrec fun <T> unique(a: T, b: T, f: () -> T): T {
-    if (a != b) return a
-    return unique(f(), b, f)
-}
 
-tailrec fun <T> uniqueIn(a: T, b: Collection<T>, f: () -> T): T {
-    if (a !in b) return a
-    return uniqueIn(f(), b, f)
-}
 
 fun Boolean.toInt(): Int = if (this) 1 else 0
 
@@ -87,4 +89,8 @@ fun multiMin(vararg a: Double): Double {
     if (a.size == 1) return a.first()
     if (a.size == 2) return min(a.first(), a.last())
     return multiMin(min(a.last(), a[a.lastIndex - 1]), *a.take(a.size - 2).toDoubleArray())
+}
+
+fun <T, R> Collection<T>.forEachWhen(onElement: (T) -> (R) -> Unit) {
+
 }

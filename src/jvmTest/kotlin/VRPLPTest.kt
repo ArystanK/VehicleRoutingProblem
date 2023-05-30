@@ -1,5 +1,5 @@
 import kotlinx.coroutines.runBlocking
-import linear_programming.solveVRPLinearProgramming
+import domain.linear_programming.solveVRPLinearProgramming
 import org.junit.Test
 import kotlin.math.PI
 import kotlin.math.cos

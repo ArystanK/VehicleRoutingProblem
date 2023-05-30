@@ -48,6 +48,7 @@ kotlin {
                 implementation("org.openjfx:javafx-graphics:17:win")
 
                 implementation("org.slf4j:slf4j-api:1.7.25")
+
                 runtimeOnly("org.postgresql:postgresql:42.2.27")
             }
         }

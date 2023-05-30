@@ -8,5 +8,12 @@
       <jdbc-url>jdbc:postgresql://localhost:5432/vehicle_routing_problem</jdbc-url>
       <working-dir>$ProjectFileDir$</working-dir>
     </data-source>
+    <data-source source="LOCAL" name="vrp_database@localhost" uuid="d9effe07-65fb-4e7c-ad5d-4c4caed03829">
+      <driver-ref>postgresql</driver-ref>
+      <synchronize>true</synchronize>
+      <jdbc-driver>org.postgresql.Driver</jdbc-driver>
+      <jdbc-url>jdbc:postgresql://localhost:5432/vrp_database</jdbc-url>
+      <working-dir>$ProjectFileDir$</working-dir>
+    </data-source>
   </component>
 </project>
