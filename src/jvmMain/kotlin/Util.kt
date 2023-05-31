@@ -1,13 +1,35 @@
+import domain.poko.BusStop
+import kotlin.math.abs
 import kotlin.math.min
+import kotlin.math.pow
 import kotlin.math.sqrt
 
-data class Point(val x: Double, val y: Double)
-
-data class Rectangle(val a: Point, val b: Point) {
-    operator fun contains(position: Pair<Double, Double>): Boolean =
-        position.first in a.x..b.x && position.second in a.y..b.y
+fun generateDistanceMatrix(
+    busStops: List<BusStop>,
+    distance: (BusStop, BusStop) -> Double,
+): Array<DoubleArray> = Array(busStops.size) { i ->
+    DoubleArray(busStops.size) { j ->
+        distance(busStops[i], busStops[j])
+    }
 }
 
+fun generateDistanceMatrixMap(
+    busStops: List<BusStop>,
+    distance: (BusStop, BusStop) -> Double,
+): Map<Int, Map<Int, Double>> = busStops.associate { outer ->
+    outer.id to busStops.associate { inner ->
+        inner.id to distance(outer, inner)
+    }
+}
+
+fun Map<Int, Map<Int, Double>>.toMatrix(setWhenZero: Double = 0.0): Array<DoubleArray> =
+    map { it.value.map { if (it.value == 0.0) setWhenZero else it.value }.toDoubleArray() }.toTypedArray()
+
+fun euclideanDistance(p1: Pair<Double, Double>, p2: Pair<Double, Double>) =
+    (p1.first - p2.first).pow(2) + (p1.second - p2.second).pow(2)
+
+fun manhattanDistance(p1: Pair<Double, Double>, p2: Pair<Double, Double>) =
+    abs(p1.first - p2.first) + abs(p1.second - p2.second)
 
 // route = [1, 7, 5, 3]
 // nodes = [4, 1, 4, 2]
@@ -91,12 +113,8 @@ fun Int.toBoolean(): Boolean = this == 1
 
 fun IntArray.toBooleanArray(): BooleanArray = map { it.toBoolean() }.toBooleanArray()
 
-fun multiMin(vararg a: Double): Double {
+tailrec fun multiMin(vararg a: Double): Double {
     if (a.size == 1) return a.first()
     if (a.size == 2) return min(a.first(), a.last())
     return multiMin(min(a.last(), a[a.lastIndex - 1]), *a.take(a.size - 2).toDoubleArray())
-}
-
-fun <T, R> Collection<T>.forEachWhen(onElement: (T) -> (R) -> Unit) {
-
 }

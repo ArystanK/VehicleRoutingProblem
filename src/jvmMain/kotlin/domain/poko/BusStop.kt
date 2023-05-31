@@ -1,11 +1,11 @@
 package domain.poko
 
+import center.sciprog.maps.coordinates.Gmc
 import data.database.entities.BusStopEntity
-import data.database.entities.BusStops
-import data.database.entities.toBusStops
+import space.kscience.kmath.geometry.Degrees
 
 fun BusStopEntity.toBusStop() = BusStop(
-    id = id.value,
+    id = index,
     lat = latitude,
     lon = longitude,
     address = address,
@@ -19,5 +19,5 @@ data class BusStop(
     val address: String,
     val busStops: BusStops,
 ) {
-    fun toLocationPair(): Pair<Double, Double> = lat to lon
+    fun toGmc(): Gmc = Gmc(Degrees(lat), Degrees(lon))
 }

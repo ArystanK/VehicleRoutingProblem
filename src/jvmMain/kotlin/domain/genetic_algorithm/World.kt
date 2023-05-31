@@ -1,6 +1,8 @@
 package domain.genetic_algorithm
 
 import domain.repository.FitnessRepository
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
 import myBinarySearch
@@ -68,18 +70,20 @@ class World(
         population = population.take(populationSize).toMutableList()
     }
 
-    suspend fun solve() {
-        fitnessRepository.safeFitnessList(busStopId).onSuccess { fitnessListObject ->
-            repeat(generationSize) {
-                onGeneration()
-                val fitnessList = population.map { it.fitness }
-                coroutineScope {
-                    launch {
-                        fitnessRepository.safeFitness(
-                            fitnessList = fitnessListObject,
-                            avgFitness = fitnessList.average(),
-                            maxFitness = fitnessList.max()
-                        )
+    fun solve() {
+        CoroutineScope(Dispatchers.IO).launch {
+            fitnessRepository.safeFitnessList(busStopId).onSuccess { fitnessListObject ->
+                repeat(generationSize) {
+                    onGeneration()
+                    val fitnessList = population.map { it.fitness }
+                    coroutineScope {
+                        launch {
+                            fitnessRepository.safeFitness(
+                                fitnessList = fitnessListObject,
+                                avgFitness = fitnessList.average(),
+                                maxFitness = fitnessList.max()
+                            )
+                        }
                     }
                 }
             }

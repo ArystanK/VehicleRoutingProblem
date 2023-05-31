@@ -1,8 +1,6 @@
 package domain.poko
 
 import data.database.entities.RouteEntity
-import data.database.entities.RouteList
-import data.database.entities.toRouteList
 
 fun RouteEntity.toRoute() = Route(
     id = id.value,

@@ -7,16 +7,22 @@ import org.jetbrains.exposed.dao.id.IntIdTable
 import org.jetbrains.exposed.sql.Column
 
 internal object BusStopTable : IntIdTable("bus_stop") {
+    val index = integer("index")
     val busStops: Column<EntityID<Int>> =
         reference("bus_stops_id", BusStopsTable.id)
     val latitude: Column<Double> = double("latitude")
     val longitude: Column<Double> = double("longitude")
     val address: Column<String> = text("address")
+
+    init {
+        uniqueIndex(index, busStops)
+    }
 }
 
 class BusStopEntity(id: EntityID<Int>) : IntEntity(id) {
     companion object : IntEntityClass<BusStopEntity>(BusStopTable)
 
+    var index by BusStopTable.index
     var busStops by BusStopsEntity referencedOn BusStopTable.busStops
     var latitude by BusStopTable.latitude
     var longitude by BusStopTable.longitude

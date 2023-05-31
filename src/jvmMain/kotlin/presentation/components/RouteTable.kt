@@ -12,8 +12,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.unit.dp
-import data.database.entities.RouteList
 import domain.poko.Route
+import domain.poko.RouteList
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable

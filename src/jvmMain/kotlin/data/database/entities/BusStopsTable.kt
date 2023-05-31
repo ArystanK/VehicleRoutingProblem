@@ -13,7 +13,12 @@ internal object BusStopsTable : IntIdTable("bus_stops") {
     val endSearchBoxLongitude: Column<Double> = double("end_search_box_lon")
 
     init {
-        uniqueIndex(startSearchBoxLatitude, startSearchBoxLongitude, endSearchBoxLatitude, endSearchBoxLongitude)
+        uniqueIndex(
+            startSearchBoxLatitude,
+            startSearchBoxLongitude,
+            endSearchBoxLatitude,
+            endSearchBoxLongitude,
+        )
     }
 }
 
@@ -27,39 +32,3 @@ class BusStopsEntity(id: EntityID<Int>) : IntEntity(id) {
     var endSearchBoxLongitude by BusStopsTable.endSearchBoxLongitude
 }
 
-fun BusStopsEntity.toBusStops() = BusStops(
-    id = id.value,
-    startSearchBoxLatitude = startSearchBoxLatitude,
-    startSearchBoxLongitude = startSearchBoxLongitude,
-    endSearchBoxLatitude = endSearchBoxLatitude,
-    endSearchBoxLongitude = endSearchBoxLongitude
-)
-
-data class BusStops(
-    val id: Int? = null,
-    val startSearchBoxLatitude: Double,
-    val startSearchBoxLongitude: Double,
-    val endSearchBoxLatitude: Double,
-    val endSearchBoxLongitude: Double,
-) {
-    override fun equals(other: Any?): Boolean {
-        if (this === other) return true
-        if (javaClass != other?.javaClass) return false
-
-        other as BusStops
-        if (id == other.id) return true
-
-        if (startSearchBoxLatitude != other.startSearchBoxLatitude) return false
-        if (startSearchBoxLongitude != other.startSearchBoxLongitude) return false
-        if (endSearchBoxLatitude != other.endSearchBoxLatitude) return false
-        return endSearchBoxLongitude == other.endSearchBoxLongitude
-    }
-
-    override fun hashCode(): Int {
-        var result = startSearchBoxLatitude.hashCode()
-        result = 31 * result + startSearchBoxLongitude.hashCode()
-        result = 31 * result + endSearchBoxLatitude.hashCode()
-        result = 31 * result + endSearchBoxLongitude.hashCode()
-        return result
-    }
-}

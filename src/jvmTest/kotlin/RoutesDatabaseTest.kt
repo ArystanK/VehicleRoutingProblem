@@ -16,12 +16,4 @@ class RoutesDatabaseTest {
         println(repository.getRoutes())
     }
 
-    @Test
-    fun routesMapCheck(): Unit = runBlocking {
-        val busStopsRepository = BusStopsRepository()
-        val routesRepository = RoutesRepository()
-        val busStops = busStopsRepository.getBusStops()
-        val routes = routesRepository.getRoutes().map { it.busStop }
-        println(routes)
-    }
 }

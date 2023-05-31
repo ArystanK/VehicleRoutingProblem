@@ -1,9 +1,9 @@
 package domain.repository
 
 import data.database.VRPDatabase
-import data.database.entities.BusStops
-import data.database.entities.Fitness
-import data.database.entities.FitnessList
+import domain.poko.BusStops
+import domain.poko.Fitness
+import domain.poko.FitnessList
 import kotlinx.coroutines.coroutineScope
 
 class FitnessRepository {

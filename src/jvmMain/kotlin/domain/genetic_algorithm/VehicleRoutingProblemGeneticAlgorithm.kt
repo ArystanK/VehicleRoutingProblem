@@ -14,7 +14,7 @@ class VehicleRoutingProblemGeneticAlgorithm(
     private val busStopsId: Int,
 ) {
     @OptIn(ExperimentalSerializationApi::class)
-    suspend fun solve(): List<List<Int>> {
+    fun solve(): List<List<Int>> {
         val initSolutionFile = File("GA_SOLUTION.json")
         val initRoutes: List<List<Int>> = Json.decodeFromStream<List<List<Int>>>(initSolutionFile.inputStream())
         val ga = World(

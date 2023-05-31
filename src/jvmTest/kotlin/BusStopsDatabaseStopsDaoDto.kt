@@ -6,7 +6,9 @@ import org.junit.Test
 class BusStopsDatabaseStopsDaoDto {
     @Test
     fun getBusStopsTest() {
-        println(VRPDatabase.getAllBusStops())
+        VRPDatabase.getAllBusStopCollections().associateWith {
+            VRPDatabase.getBusStopsByBusStopsKey(it)
+        }.forEach { println("${it.key} -> ${it.value.size}") }
     }
 
     @Test

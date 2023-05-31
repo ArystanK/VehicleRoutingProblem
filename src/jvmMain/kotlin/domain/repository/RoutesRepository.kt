@@ -2,7 +2,9 @@ package domain.repository
 
 import data.database.*
 import data.database.entities.*
+import domain.poko.BusStops
 import domain.poko.Route
+import domain.poko.RouteList
 import kotlinx.coroutines.coroutineScope
 
 class RoutesRepository {

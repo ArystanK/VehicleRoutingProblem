@@ -1,12 +1,10 @@
 package data.database
 
-import Rectangle
+import center.sciprog.maps.coordinates.Gmc
+import center.sciprog.maps.features.Rectangle
 import data.database.entities.*
 import data.database.entities.BusStopTable
-import domain.poko.BusStop
-import domain.poko.Route
-import domain.poko.toBusStop
-import domain.poko.toRoute
+import domain.poko.*
 import org.jetbrains.exposed.dao.id.EntityID
 import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.transactions.TransactionManager
@@ -38,20 +36,20 @@ object VRPDatabase {
         }
     }
 
-    fun createBusStops(searchBox: Rectangle): BusStops = transaction(database) {
+    fun createBusStops(searchBox: Rectangle<Gmc>): BusStops = transaction(database) {
         addLogger(StdOutSqlLogger)
         val busStopEntity = BusStopsEntity.find {
-            (BusStopsTable.startSearchBoxLatitude eq searchBox.a.x) and
-                    (BusStopsTable.startSearchBoxLongitude eq searchBox.a.y) and
-                    (BusStopsTable.endSearchBoxLatitude eq searchBox.b.x) and
-                    (BusStopsTable.endSearchBoxLongitude eq searchBox.b.y)
+            (BusStopsTable.startSearchBoxLatitude eq searchBox.a.latitude.toDegrees().value) and
+                    (BusStopsTable.startSearchBoxLongitude eq searchBox.a.longitude.toDegrees().value) and
+                    (BusStopsTable.endSearchBoxLatitude eq searchBox.b.latitude.toDegrees().value) and
+                    (BusStopsTable.endSearchBoxLongitude eq searchBox.b.longitude.toDegrees().value)
         }.firstOrNull()
         if (busStopEntity != null) return@transaction busStopEntity.toBusStops()
         BusStopsEntity.new {
-            this.startSearchBoxLatitude = searchBox.a.x
-            this.startSearchBoxLongitude = searchBox.a.y
-            this.endSearchBoxLatitude = searchBox.b.x
-            this.endSearchBoxLongitude = searchBox.b.y
+            this.startSearchBoxLatitude = searchBox.a.latitude.toDegrees().value
+            this.startSearchBoxLongitude = searchBox.a.longitude.toDegrees().value
+            this.endSearchBoxLatitude = searchBox.b.latitude.toDegrees().value
+            this.endSearchBoxLongitude = searchBox.b.longitude.toDegrees().value
         }.toBusStops()
     }
 
@@ -80,7 +78,7 @@ object VRPDatabase {
         address: String,
     ): BusStop = transaction(database) {
         addLogger(StdOutSqlLogger)
-        BusStopEntity.new(id) {
+        BusStopEntity.new {
             this.busStops = BusStopsEntity(EntityID(busStops.id!!, BusStopsTable)).apply {
                 db = database
                 klass = BusStopsEntity
@@ -88,9 +86,9 @@ object VRPDatabase {
             this.latitude = latitude
             this.longitude = longitude
             this.address = address
+            this.index = id
         }.toBusStop()
     }
-
 
     fun createMultipleBusStops(
         busStops: List<BusStop>,
@@ -110,6 +108,11 @@ object VRPDatabase {
     fun getBusStopById(id: Int): BusStop? = transaction(database) {
         addLogger(StdOutSqlLogger)
         BusStopEntity.findById(id)?.toBusStop()
+    }
+
+    fun getBusStopsByBusStopsKey(busStops: BusStops): List<BusStop> = transaction(database) {
+        addLogger(StdOutSqlLogger)
+        BusStopEntity.all().filter { it.busStops.toBusStops() == busStops }.map { it.toBusStop() }
     }
 
     fun getAllBusStops(): List<BusStop> = transaction(database) {
@@ -253,5 +256,15 @@ object VRPDatabase {
     fun deleteRoute(id: Int) = transaction(database) {
         addLogger(StdOutSqlLogger)
         RouteEntity.findById(id)?.delete()
+    }
+
+    fun getBusStopsBySearchBox(searchBox: Rectangle<Gmc>): BusStops? = transaction(database) {
+        addLogger(StdOutSqlLogger)
+        BusStopsEntity.find {
+            (BusStopsTable.startSearchBoxLatitude eq searchBox.a.latitude.toDegrees().value) and
+                    (BusStopsTable.startSearchBoxLongitude eq searchBox.a.longitude.toDegrees().value) and
+                    (BusStopsTable.endSearchBoxLatitude eq searchBox.b.latitude.toDegrees().value) and
+                    (BusStopsTable.endSearchBoxLongitude eq searchBox.b.longitude.toDegrees().value)
+        }.firstOrNull()?.toBusStops()
     }
 }
