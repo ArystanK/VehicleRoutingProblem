@@ -2,35 +2,43 @@ package domain.repository
 
 import data.database.*
 import data.database.entities.*
+import domain.poko.BusStop
 import domain.poko.BusStops
 import domain.poko.Route
 import domain.poko.RouteList
 import kotlinx.coroutines.coroutineScope
 
 class RoutesRepository {
-    suspend fun safeSolution(routes: List<List<Int>>, busStops: BusStops): Result<List<List<Route>>> = coroutineScope {
-        Result.success(routes.indices.map { i ->
-            val routesEntity = VRPDatabase.createRouteList(busStops)
+    suspend fun safeSolution(routes: List<List<Int>>, busStops: BusStops, type: String): Result<List<List<Route>>> =
+        coroutineScope {
+            val routesEntity = VRPDatabase.createRouteList(busStops, type)
             val busStopList = VRPDatabase.getAllBusStops()
-            VRPDatabase.createMultipleRoutes(
-                busStops = routes[i].map { id -> busStopList.first { it.id == id } },
-                routesList = routesEntity
-            )
-        })
-    }
+            Result.success(routes.indices.map { i ->
+                VRPDatabase.createMultipleRoutes(
+                    busStops = routes[i].map { id -> busStopList.first { it.id == id } },
+                    routesList = routesEntity
+                )
+            })
+        }
 
-    suspend fun safeSolution(routes: List<List<Int>>, busStopsId: Int): Result<List<List<Route>>> = coroutineScope {
-        Result.success(routes.indices.map { i ->
+    suspend fun safeSolution(
+        routes: List<List<Int>>,
+        busStopsId: Int,
+        type: String,
+        busStopList: List<BusStop>,
+    ): Result<List<List<Route>>> =
+        coroutineScope {
             val busStops = VRPDatabase.getBusStopsById(busStopsId)
                 ?: return@coroutineScope Result.failure(Exception("Bus stops is not find"))
-            val routesEntity = VRPDatabase.createRouteList(busStops)
-            val busStopList = VRPDatabase.getAllBusStops()
-            VRPDatabase.createMultipleRoutes(
-                busStops = routes[i].map { id -> busStopList.first { it.id == id } },
-                routesList = routesEntity
-            )
-        })
-    }
+            val routesEntity = VRPDatabase.createRouteList(busStops, type)
+
+            Result.success(routes.indices.map { i ->
+                VRPDatabase.createMultipleRoutes(
+                    busStops = routes[i].map { id -> busStopList[id] },
+                    routesList = routesEntity
+                )
+            })
+        }
 
     suspend fun getRoutes(): Result<List<Route>> = coroutineScope { Result.success(VRPDatabase.getAllRoutes()) }
     suspend fun getRouteById(id: Int): Result<RouteList> = coroutineScope {

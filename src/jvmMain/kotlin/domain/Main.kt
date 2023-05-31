@@ -42,7 +42,7 @@ fun main(): Unit = runBlocking {
 
                 val endTime = System.nanoTime()
                 println(endTime - startTime)
-                routesRepository.safeSolution(routes, busStopsKey.id!!)
+                routesRepository.safeSolution(routes, busStopsKey, "LP")
 //    result.writeText(
 //        Json.encodeToJsonElement(solutions + VRPSolution(distanceMatrix, numberOfRoutes, solution)).toString()
 //    )

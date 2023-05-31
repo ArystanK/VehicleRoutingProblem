@@ -153,7 +153,7 @@ object VRPDatabase {
     fun updateFitnessList(id: Int, busStops: BusStops) = transaction(database) {
         addLogger(StdOutSqlLogger)
         val fitnessListEntity = FitnessListEntity.findById(id)
-        fitnessListEntity?.busStops = BusStopsEntity(EntityID(busStops.id!!, BusStopsTable))
+        fitnessListEntity?.busStops = BusStopsEntity(EntityID(busStops.id, BusStopsTable))
     }
 
     fun deleteFitnessList(id: Int) = transaction(database) {
@@ -193,10 +193,14 @@ object VRPDatabase {
         FitnessEntity.findById(id)?.delete()
     }
 
-    fun createRouteList(busStops: BusStops): RouteList = transaction(database) {
+    fun createRouteList(busStops: BusStops, type: String): RouteList = transaction(database) {
         addLogger(StdOutSqlLogger)
         RouteListEntity.new {
-            this.busStops = BusStopsEntity(EntityID(busStops.id!!, BusStopsTable))
+            this.busStops = BusStopsEntity(EntityID(busStops.id, BusStopsTable)).apply {
+                db = database
+                klass = BusStopsEntity
+            }
+            this.type = type
         }.toRouteList()
     }
 
@@ -213,7 +217,7 @@ object VRPDatabase {
     fun updateRouteList(id: Int, busStops: BusStops) = transaction(database) {
         addLogger(StdOutSqlLogger)
         val routesList = RouteListEntity.findById(id)
-        routesList?.busStops = BusStopsEntity(EntityID(busStops.id!!, BusStopsTable))
+        routesList?.busStops = BusStopsEntity(EntityID(busStops.id, BusStopsTable))
     }
 
     fun deleteRouteList(id: Int) = transaction(database) {
@@ -225,8 +229,15 @@ object VRPDatabase {
     fun createRoute(routesList: RouteList, busStop: BusStop): Route = transaction(database) {
         addLogger(StdOutSqlLogger)
         RouteEntity.new {
-            this.routes = RouteListEntity(routesList.id)
-            this.busStop = BusStopEntity(EntityID(busStop.id, BusStopTable))
+            this.routes = RouteListEntity(routesList.id).apply {
+                db = database
+                klass = RouteListEntity
+            }
+            this.busStop = BusStopEntity(EntityID(busStop.id, BusStopTable)).apply {
+                db = database
+                klass = BusStopEntity
+            }
+
         }.toRoute()
     }
 

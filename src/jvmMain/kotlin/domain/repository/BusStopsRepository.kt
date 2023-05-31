@@ -21,7 +21,6 @@ import space.kscience.kmath.geometry.Degrees
 
 class BusStopsRepository {
     private val database = VRPDatabase
-
     suspend fun getAllBusStops(): Result<List<BusStop>> = coroutineScope {
         Result.success(database.getAllBusStops())
     }

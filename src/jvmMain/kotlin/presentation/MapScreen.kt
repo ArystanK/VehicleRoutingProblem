@@ -25,6 +25,7 @@ import domain.repository.FitnessRepository
 import domain.repository.RoutesRepository
 import presentation.components.PickItemTable
 import presentation.components.RouteTable
+import presentation.components.RoutesCreationDialog
 
 @Composable
 fun App(component: VisualizationComponent) {
@@ -57,11 +58,15 @@ fun App(component: VisualizationComponent) {
     }
 
     MaterialTheme {
-        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.TopEnd) {
+        Box(
+            modifier = Modifier.fillMaxSize(),
+            contentAlignment = Alignment.TopEnd
+        ) {
             MapView(
                 viewScope = viewScope,
-                features = features
+                features = features,
             )
+            Box(Modifier.fillMaxSize().background(Color.Gray.copy(alpha = if (state.isBusStopsAddMode) 0.7f else 0f)))
             Box(
                 modifier = Modifier
                     .width(600.dp)
@@ -119,6 +124,18 @@ fun App(component: VisualizationComponent) {
                 }
             }
         }
+        RoutesCreationDialog(
+            dialogShown = state.isAddRoutesMode,
+            numberOfRoutes = state.addRoutesState.numberOfRoutes,
+            solutionMethod = state.addRoutesState.solutionMethod,
+            onSolutionMethodChange = { component.reduce(VisualizationIntent.SolutionMethodChangeIntent(it)) },
+            onNumberOfRoutesChange = { component.reduce(VisualizationIntent.NumberOfRouteChangeIntent(it)) },
+            onCloseRequest = { component.reduce(VisualizationIntent.RoutesAddModeToggle) },
+            onSubmit = {
+                component.reduce(VisualizationIntent.RoutesAdd)
+                component.reduce(VisualizationIntent.RoutesAddModeToggle)
+            }
+        )
     }
 }
 
@@ -129,7 +146,7 @@ fun main() {
     val fitnessRepository = FitnessRepository()
     val component = VisualizationComponent(routesRepository, busStopsRepository, fitnessRepository)
     application {
-        Window(onCloseRequest = ::exitApplication) {
+        Window(onCloseRequest = ::exitApplication, title = "VRP") {
             App(component)
         }
     }

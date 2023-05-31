@@ -28,5 +28,15 @@ sealed interface VisualizationIntent {
 
     object RoutesAddModeToggle : VisualizationIntent
 
-    data class RoutesAdd(val numberOfRoutes: Int, val method: SolutionMethod) : VisualizationIntent
+    object RoutesAdd : VisualizationIntent
+
+    @JvmInline
+    value class SolutionMethodChangeIntent(val solutionMethod: SolutionMethod) : VisualizationIntent {
+        override fun toString(): String {
+            return "SolutionMethodChangeIntent(solutionMethod=$solutionMethod)"
+        }
+    }
+
+    @JvmInline
+    value class NumberOfRouteChangeIntent(val numberOfRoutes: String) : VisualizationIntent
 }

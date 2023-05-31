@@ -101,6 +101,7 @@ class VisualizationComponent(
             is VisualizationIntent.RoutesAdd -> {
                 CoroutineScope(Dispatchers.IO).launch {
                     _state.update {
+                        val numberOfRoutes = it.addRoutesState.numberOfRoutes.toIntOrNull() ?: return@launch
                         if (!it.isAddRoutesMode) return@launch
                         val busStops = it.busStops[it.busStopsKey] ?: return@launch
                         val distanceMatrix = generateDistanceMatrix(
@@ -110,18 +111,18 @@ class VisualizationComponent(
                             }
                         )
                         val routes = async(Dispatchers.Main) {
-                            when (intent.method) {
+                            when (it.addRoutesState.solutionMethod) {
                                 SolutionMethod.LP -> {
                                     solveVRPLinearProgramming(
-                                        numberOfRoutes = intent.numberOfRoutes,
+                                        numberOfRoutes = numberOfRoutes,
                                         distMatrix = distanceMatrix
-                                    ).map { it.toRoute() }
+                                    ).map { it.toRoute() }.also { println(it) }
                                 }
 
                                 SolutionMethod.GA -> {
                                     VehicleRoutingProblemGeneticAlgorithm(
                                         distMatrix = distanceMatrix,
-                                        numberOfRoutes = intent.numberOfRoutes,
+                                        numberOfRoutes = numberOfRoutes,
                                         fitnessRepository = fitnessRepository,
                                         busStopsId = it.busStopsKey?.id ?: return@async listOf()
                                     ).solve()
@@ -134,12 +135,29 @@ class VisualizationComponent(
                         }
 
                         val result =
-                            routesRepository.safeSolution(routes = routes.await(), it.busStopsKey?.id ?: return@launch)
+                            routesRepository.safeSolution(
+                                routes = routes.await(),
+                                busStopsId = it.busStopsKey?.id ?: return@launch,
+                                type = it.addRoutesState.solutionMethod.name,
+                                busStopList = it.busStops[it.busStopsKey] ?: return@launch
+                            )
                         it.copy(
                             routes = it.routes + (result.getOrDefault(emptyList()).flatten().groupBy { it.routes }),
                             isAddRoutesMode = false
                         )
                     }
+                }
+            }
+
+            is VisualizationIntent.NumberOfRouteChangeIntent -> {
+                _state.update {
+                    it.copy(addRoutesState = it.addRoutesState.copy(numberOfRoutes = intent.numberOfRoutes))
+                }
+            }
+
+            is VisualizationIntent.SolutionMethodChangeIntent -> {
+                _state.update {
+                    it.copy(addRoutesState = it.addRoutesState.copy(solutionMethod = intent.solutionMethod))
                 }
             }
         }

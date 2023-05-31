@@ -73,6 +73,7 @@ class Routes private constructor(
             }
 
             fun addMutate(): List<Int> {
+//                if (this.)
                 val newNode = uniqueIn(
                     Random.nextInt(distMatrix.size),
                     this
