@@ -20,4 +20,8 @@ data class BusStop(
     val busStops: BusStops,
 ) {
     fun toGmc(): Gmc = Gmc(Degrees(lat), Degrees(lon))
+
+    override fun toString(): String {
+        return "BusStop(id=$id, lat=$lat, lon=$lon, busStops=$busStops)"
+    }
 }

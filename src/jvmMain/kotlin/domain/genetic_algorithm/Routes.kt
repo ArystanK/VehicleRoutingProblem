@@ -15,12 +15,13 @@ class Routes private constructor(
         mutationRate: Double,
         initialRoutes: List<List<Int>>? = null,
     ) :
-            this(initialRoutes ?: List(numberOfRoutes) { randomRoute(distMatrix.size) }, distMatrix, mutationRate)
+            this(List(numberOfRoutes) { randomRoute(distMatrix.size) }, distMatrix, mutationRate)
 
     val fitness: Double =
         100 / routes.maxOf { route -> route.windowed(2).sumOf { distMatrix[it[0]][it[1]] } }
 
     private val nodesVisited = routes.flatten().distinct()
+    private val duplicates = routes.flatten() - routes.flatten().distinct().toSet()
 
 
     fun crossover(other: Routes): Pair<Routes, Routes> {
@@ -66,14 +67,16 @@ class Routes private constructor(
             }
 
             fun removeMutate(): List<Int> {
-                if (this@Routes.nodesVisited.size <= distMatrix.size) return this
+                if (this.size <= 2) return this
+//                if (this@Routes.nodesVisited.size <= distMatrix.size) return this
                 if (size <= 10) return this
-                val removeId = Random.nextInt(size)
-                return filterIndexed { index, _ -> index == removeId }
+                if (duplicates.isEmpty()) return this
+                val removeId = duplicates.random()
+                return filter { it != removeId }
             }
 
             fun addMutate(): List<Int> {
-//                if (this.)
+                if (this.containsAll(distMatrix.indices.toSet())) return this
                 val newNode = uniqueIn(
                     Random.nextInt(distMatrix.size),
                     this
@@ -83,9 +86,9 @@ class Routes private constructor(
 
             val probability = Random.nextDouble()
             return when {
-                probability <= 0.25 -> swapMutate()
-                probability <= 0.50 -> rotateMutate()
-                probability <= 0.75 -> removeMutate()
+                probability <= 0.30 -> removeMutate()
+                probability <= 0.55 -> swapMutate()
+                probability <= 0.80 -> rotateMutate()
                 else -> addMutate()
             }
         }

@@ -16,4 +16,8 @@ data class BusStops(
     val startSearchBoxLongitude: Double,
     val endSearchBoxLatitude: Double,
     val endSearchBoxLongitude: Double,
-)
+) {
+    override fun toString(): String {
+        return "BusStops(id=$id)"
+    }
+}

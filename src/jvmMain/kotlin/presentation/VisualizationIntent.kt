@@ -2,14 +2,12 @@ package presentation
 
 import center.sciprog.maps.coordinates.Gmc
 import center.sciprog.maps.features.Rectangle
-import domain.poko.BusStops
-import domain.poko.RouteList
-import domain.poko.SolutionMethod
+import domain.poko.*
 
 sealed interface VisualizationIntent {
     @JvmInline
-    value class RouteShowIntent(val routeId: Int) : VisualizationIntent {
-        override fun toString(): String = "RouteShowIntent(routeId=$routeId)"
+    value class RouteShowIntent(val route: List<BusStop>) : VisualizationIntent {
+        override fun toString(): String = "RouteShowIntent(route=$route)"
     }
 
     @JvmInline
@@ -18,8 +16,8 @@ sealed interface VisualizationIntent {
     }
 
     @JvmInline
-    value class RouteListPickIntent(val routeList: RouteList?) : VisualizationIntent {
-        override fun toString(): String = "RouteListPickIntent(routeList=$routeList)"
+    value class RouteListPickIntent(val route: Route?) : VisualizationIntent {
+        override fun toString(): String = "RouteListPickIntent(routeList=$route)"
     }
 
     object BusStopsAddModeToggle : VisualizationIntent

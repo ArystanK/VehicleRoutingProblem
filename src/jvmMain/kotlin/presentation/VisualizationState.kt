@@ -8,11 +8,12 @@ import io.ktor.client.engine.cio.*
 import java.nio.file.Path
 
 data class VisualizationState(
-    val routes: Map<RouteList, List<Route>> = emptyMap(),
+    val routes: List<List<BusStop>> = emptyList(),
+    val routesList: Map<BusStops, List<Route>> = emptyMap(),
     val busStops: Map<BusStops, List<BusStop>> = emptyMap(),
-    val routesShown: List<RouteList> = emptyList(),
+    val routesShown: List<List<BusStop>> = emptyList(),
     val busStopsKey: BusStops? = null,
-    val routeListKey: RouteList? = null,
+    val routeKey: Route? = null,
     val isBusStopsAddMode: Boolean = false,
     val isAddRoutesMode: Boolean = false,
     val addRoutesState: AddRoutesState = AddRoutesState(),

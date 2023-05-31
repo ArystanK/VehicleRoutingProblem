@@ -120,6 +120,14 @@ object VRPDatabase {
         BusStopEntity.all().map { it.toBusStop() }
     }
 
+    fun getRoutesData() = transaction(database) {
+        addLogger(StdOutSqlLogger)
+        val route = RouteEntity.all().map { it.toRoute() }.groupBy { it.routes }
+        val routes = RouteListEntity.all().map { it.toRouteList() }
+        val a = routes.map { route[it] }
+
+    }
+
     fun updateBusStop(id: Int, latitude: Double, longitude: Double, address: String) = transaction(database) {
         addLogger(StdOutSqlLogger)
         val busStop = BusStopEntity.findById(id)
@@ -136,7 +144,10 @@ object VRPDatabase {
     fun createFitnessList(busStops: BusStops): FitnessList = transaction(database) {
         addLogger(StdOutSqlLogger)
         FitnessListEntity.new {
-            this.busStops = BusStopsEntity(EntityID(busStops.id!!, BusStopsTable))
+            this.busStops = BusStopsEntity(EntityID(busStops.id, BusStopsTable)).apply {
+                db = database
+                klass = BusStopsEntity
+            }
         }.toFitnessList()
     }
 
@@ -193,7 +204,7 @@ object VRPDatabase {
         FitnessEntity.findById(id)?.delete()
     }
 
-    fun createRouteList(busStops: BusStops, type: String): RouteList = transaction(database) {
+    fun createRouteList(busStops: BusStops, type: String): Route = transaction(database) {
         addLogger(StdOutSqlLogger)
         RouteListEntity.new {
             this.busStops = BusStopsEntity(EntityID(busStops.id, BusStopsTable)).apply {
@@ -204,12 +215,12 @@ object VRPDatabase {
         }.toRouteList()
     }
 
-    fun getRouteListById(id: Int): RouteList? = transaction(database) {
+    fun getRouteListById(id: Int): Route? = transaction(database) {
         addLogger(StdOutSqlLogger)
         RouteListEntity.findById(id)?.toRouteList()
     }
 
-    fun getAllRouteLists(): List<RouteList> = transaction(database) {
+    fun getAllRouteLists(): List<Route> = transaction(database) {
         addLogger(StdOutSqlLogger)
         RouteListEntity.all().map { it.toRouteList() }
     }
@@ -226,10 +237,9 @@ object VRPDatabase {
     }
 
     // CRUD methods for Routes...
-    fun createRoute(routesList: RouteList, busStop: BusStop): Route = transaction(database) {
-        addLogger(StdOutSqlLogger)
+    private fun createRoute(routesList: Route, busStop: BusStop): Location = transaction(database) {
         RouteEntity.new {
-            this.routes = RouteListEntity(routesList.id).apply {
+            this.routes = RouteListEntity(EntityID(routesList.id, RouteListTable)).apply {
                 db = database
                 klass = RouteListEntity
             }
@@ -241,19 +251,19 @@ object VRPDatabase {
         }.toRoute()
     }
 
-    fun createMultipleRoutes(routesList: RouteList, busStops: List<BusStop>): List<Route> =
+    fun createMultipleRoutes(routesList: Route, busStops: List<BusStop>): List<Location> =
         transaction(database) {
             addLogger(StdOutSqlLogger)
             busStops.map { createRoute(routesList, it) }
         }
 
 
-    fun getRouteById(id: Int): Route? = transaction(database) {
+    fun getRouteById(id: Int): Location? = transaction(database) {
         addLogger(StdOutSqlLogger)
         RouteEntity.findById(id)?.toRoute()
     }
 
-    fun getAllRoutes(): List<Route> = transaction(database) {
+    fun getAllRoutes(): List<Location> = transaction(database) {
         addLogger(StdOutSqlLogger)
         RouteEntity.all().map { it.toRoute() }
     }

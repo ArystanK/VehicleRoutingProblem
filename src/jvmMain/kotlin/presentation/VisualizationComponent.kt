@@ -28,13 +28,14 @@ class VisualizationComponent(
 
     init {
         CoroutineScope(Dispatchers.IO).launch {
-            routesRepository.getRoutes().onSuccess { routes ->
-                busStopsRepository.getAllBusStops().onSuccess { busStops ->
+            busStopsRepository.getAllBusStops().onSuccess { busStops ->
+                routesRepository.getRoutesList().onSuccess { routeList ->
                     val groupedByBusStops = busStops.groupBy { it.busStops }
                     _state.update {
                         it.copy(
                             busStops = groupedByBusStops,
-                            routes = routes.groupBy { it.routes }
+                            routes = emptyList(),
+                            routesList = routeList.groupBy { it.busStops }
                         )
                     }
                 }
@@ -47,17 +48,14 @@ class VisualizationComponent(
         when (intent) {
             is VisualizationIntent.RouteShowIntent -> {
                 CoroutineScope(Dispatchers.IO).launch {
-                    routesRepository.getRouteById(intent.routeId).onSuccess {
-                        _state.update { state ->
-                            val isRouteListAlreadySelected = it in state.routesShown
-                            val newRoutesShown =
-                                if (!isRouteListAlreadySelected) state.routesShown + it else state.routesShown - it
-                            state.copy(
-                                routesShown = newRoutesShown
-                            )
-                        }
+                    _state.update { state ->
+                        val isRouteListAlreadySelected = intent.route in state.routesShown
+                        val newRoutesShown = state.routesShown.toMutableList()
+                        if (!isRouteListAlreadySelected) newRoutesShown.add(intent.route) else newRoutesShown.remove(intent.route)
+                        state.copy(
+                            routesShown = newRoutesShown
+                        )
                     }
-
                 }
             }
 
@@ -69,7 +67,7 @@ class VisualizationComponent(
 
             is VisualizationIntent.RouteListPickIntent -> {
                 _state.update {
-                    it.copy(routeListKey = intent.routeList)
+                    it.copy(routeKey = intent.route)
                 }
             }
 
@@ -124,25 +122,24 @@ class VisualizationComponent(
                                         distMatrix = distanceMatrix,
                                         numberOfRoutes = numberOfRoutes,
                                         fitnessRepository = fitnessRepository,
-                                        busStopsId = it.busStopsKey?.id ?: return@async listOf()
+                                        busStops = it.busStopsKey ?: return@async listOf()
                                     ).solve()
                                 }
 
                                 SolutionMethod.GNN -> {
                                     listOf()
                                 }
-                            }
-                        }
+                            }.map { it.map { busStops[it] } }
+                        }.await()
 
-                        val result =
-                            routesRepository.safeSolution(
-                                routes = routes.await(),
-                                busStopsId = it.busStopsKey?.id ?: return@launch,
-                                type = it.addRoutesState.solutionMethod.name,
-                                busStopList = it.busStops[it.busStopsKey] ?: return@launch
-                            )
+//                        val result =
+//                            routesRepository.safeSolution(
+//                                routes = routes,
+//                                busStops = it.busStopsKey ?: return@launch,
+//                                type = it.addRoutesState.solutionMethod.name
+//                            )
                         it.copy(
-                            routes = it.routes + (result.getOrDefault(emptyList()).flatten().groupBy { it.routes }),
+                            routes = routes,
                             isAddRoutesMode = false
                         )
                     }

@@ -1,5 +1,5 @@
 import data.database.VRPDatabase
-import domain.repository.BusStopsRepository
+import domain.poko.Route
 import domain.repository.RoutesRepository
 import kotlinx.coroutines.runBlocking
 import org.junit.Test
@@ -11,9 +11,14 @@ class RoutesDatabaseTest {
     }
 
     @Test
-    fun gerRoutesRepositoryTest() = runBlocking {
+    fun getRoutesRepositoryTest(): Unit = runBlocking {
         val repository = RoutesRepository()
-        println(repository.getRoutes())
+        repository.getRoutesList().onSuccess { routes: List<Route> ->
+            repository.getRoutes().onSuccess { locations ->
+                println(routes.groupBy { it.busStops })
+                println(locations.groupBy { it.routes })
+            }
+        }
     }
 
 }

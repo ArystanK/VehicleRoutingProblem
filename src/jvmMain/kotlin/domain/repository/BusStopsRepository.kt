@@ -17,6 +17,7 @@ import kotlinx.coroutines.flow.asFlow
 import kotlinx.coroutines.flow.buffer
 import kotlinx.coroutines.flow.fold
 import kotlinx.coroutines.flow.map
+import partition
 import space.kscience.kmath.geometry.Degrees
 
 class BusStopsRepository {
@@ -77,18 +78,6 @@ class BusStopsRepository {
             )
         }
         Result.success(database.createMultipleBusStops(busStops = busStops))
-    }
-
-    private fun Rectangle<Gmc>.partition(n: Int): List<Rectangle<Gmc>> {
-        val width = (b.latitude.toDegrees().value - a.latitude.toDegrees().value) / n
-        val height = (b.longitude.toDegrees().value - a.longitude.toDegrees().value) / n
-        return List(n) {
-            val startX = a.latitude.toDegrees().value + width * it
-            List(n) {
-                val startY = a.longitude.toDegrees().value + height * it
-                Rectangle(Gmc(Degrees(startX), Degrees(startY)), Gmc(Degrees(startX + width), Degrees(startY + height)))
-            }
-        }.flatten()
     }
 
     suspend fun getBusStopsBySearchBox(searchBox: Rectangle<Gmc>): Result<BusStops> = coroutineScope {

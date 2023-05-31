@@ -1,4 +1,8 @@
+import center.sciprog.maps.compose.WebMercatorSpace
+import center.sciprog.maps.coordinates.Gmc
+import center.sciprog.maps.features.Rectangle
 import domain.poko.BusStop
+import space.kscience.kmath.geometry.Degrees
 import kotlin.math.abs
 import kotlin.math.min
 import kotlin.math.pow
@@ -11,6 +15,17 @@ fun generateDistanceMatrix(
     DoubleArray(busStops.size) { j ->
         distance(busStops[i], busStops[j])
     }
+}
+fun Rectangle<Gmc>.partition(n: Int): List<Rectangle<Gmc>> {
+    val width = (b.latitude.toDegrees().value - a.latitude.toDegrees().value) / n
+    val height = (b.longitude.toDegrees().value - a.longitude.toDegrees().value) / n
+    return List(n) {
+        val startX = a.latitude.toDegrees().value + width * it
+        List(n) {
+            val startY = a.longitude.toDegrees().value + height * it
+            WebMercatorSpace.Rectangle(Gmc(Degrees(startX), Degrees(startY)), Gmc(Degrees(startX + width), Degrees(startY + height)))
+        }
+    }.flatten()
 }
 
 fun generateDistanceMatrixMap(

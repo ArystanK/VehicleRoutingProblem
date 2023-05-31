@@ -1,14 +1,15 @@
 package domain.poko
 
-import data.database.entities.RouteEntity
+import data.database.entities.RouteListEntity
 
-fun RouteEntity.toRoute() = Route(
+fun RouteListEntity.toRouteList() = Route(
     id = id.value,
-    routes = routes.toRouteList(),
-    busStop = busStop.toBusStop()
+    solutionMethod = type.toSolutionMethod(),
+    busStops = busStops.toBusStops()
 )
 
-data class Route(val id: Int, val routes: RouteList, val busStop: BusStop) {
-    fun toLocationPair() = busStop.lat to busStop.lon
-
+data class Route(val id: Int, val solutionMethod: SolutionMethod, val busStops: BusStops) {
+    override fun toString(): String {
+        return "Route(id = $id, solutionMethod = $solutionMethod, busStops = ${busStops.id})"
+    }
 }

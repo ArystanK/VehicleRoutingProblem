@@ -1,5 +1,6 @@
 package domain.genetic_algorithm
 
+import domain.poko.BusStops
 import domain.repository.FitnessRepository
 import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.encodeToString
@@ -11,7 +12,7 @@ class VehicleRoutingProblemGeneticAlgorithm(
     private val distMatrix: Array<DoubleArray>,
     private val numberOfRoutes: Int,
     private val fitnessRepository: FitnessRepository,
-    private val busStopsId: Int,
+    private val busStops: BusStops,
 ) {
     @OptIn(ExperimentalSerializationApi::class)
     fun solve(): List<List<Int>> {
@@ -20,12 +21,12 @@ class VehicleRoutingProblemGeneticAlgorithm(
         val ga = World(
             distanceMatrix = distMatrix,
             numberOfRoutes = numberOfRoutes,
-            generationSize = 100,
-            populationSize = 1000,
+            generationSize = 1000,
+            populationSize = 10000,
             mutationRate = 0.15,
             initialRoutes = initRoutes.ifEmpty { null },
             fitnessRepository = fitnessRepository,
-            busStopId = busStopsId
+            busStop = busStops
         )
         ga.solve()
         val routes = ga.population.maxBy { it.fitness }.routes

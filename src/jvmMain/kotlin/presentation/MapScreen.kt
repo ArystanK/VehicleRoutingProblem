@@ -11,7 +11,6 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Window
 import androidx.compose.ui.window.application
@@ -19,7 +18,6 @@ import center.sciprog.maps.compose.*
 import center.sciprog.maps.features.FeatureGroup
 import center.sciprog.maps.features.ViewConfig
 import center.sciprog.maps.features.color
-import domain.poko.BusStops
 import domain.repository.BusStopsRepository
 import domain.repository.FitnessRepository
 import domain.repository.RoutesRepository
@@ -43,10 +41,8 @@ fun App(component: VisualizationComponent) {
         )
     )
     val features = FeatureGroup.build(WebMercatorSpace) {
-        state.routesShown.forEach { route ->
-            state.routes[route]?.let {
-                multiLine(it.map { it.toLocationPair() }).color(Color.Blue)
-            }
+        state.routesShown.forEach {
+            multiLine(it.map { it.lat to it.lon }).color(Color.Blue)
         }
 
         state.busStopsKey?.let {
@@ -102,8 +98,8 @@ fun App(component: VisualizationComponent) {
                         }
                     }
                     PickItemTable(
-                        items = state.routes.keys.filter { it.busStops == state.busStopsKey },
-                        item = state.routeListKey,
+                        items = state.routesList[state.busStopsKey] ?: emptyList(),
+                        item = state.routeKey,
                         onItemChange = { component.reduce(VisualizationIntent.RouteListPickIntent(it)) },
                         id = { id },
                         onAdd = { component.reduce(VisualizationIntent.RoutesAddModeToggle) }
@@ -117,7 +113,7 @@ fun App(component: VisualizationComponent) {
                         }
                     }
                     RouteTable(
-                        routes = state.routes.getOrDefault(state.routeListKey, emptyList()),
+                        routes = state.routes,
                         onRouteSelected = { component.reduce(VisualizationIntent.RouteShowIntent(it)) },
                         shownRoutes = state.routesShown
                     )
@@ -133,7 +129,6 @@ fun App(component: VisualizationComponent) {
             onCloseRequest = { component.reduce(VisualizationIntent.RoutesAddModeToggle) },
             onSubmit = {
                 component.reduce(VisualizationIntent.RoutesAdd)
-                component.reduce(VisualizationIntent.RoutesAddModeToggle)
             }
         )
     }

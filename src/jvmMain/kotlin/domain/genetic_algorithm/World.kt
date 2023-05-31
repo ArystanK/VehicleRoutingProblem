@@ -1,5 +1,6 @@
 package domain.genetic_algorithm
 
+import domain.poko.BusStops
 import domain.repository.FitnessRepository
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -16,7 +17,7 @@ class World(
     private val populationSize: Int = 100,
     private val mutationRate: Double = 0.1,
     private val fitnessRepository: FitnessRepository,
-    private val busStopId: Int,
+    private val busStop: BusStops,
     initialRoutes: List<List<Int>>? = null,
 ) {
     var population: MutableList<Routes> =
@@ -72,7 +73,7 @@ class World(
 
     fun solve() {
         CoroutineScope(Dispatchers.IO).launch {
-            fitnessRepository.safeFitnessList(busStopId).onSuccess { fitnessListObject ->
+            fitnessRepository.safeFitnessList(busStop).onSuccess { fitnessListObject ->
                 repeat(generationSize) {
                     onGeneration()
                     val fitnessList = population.map { it.fitness }
