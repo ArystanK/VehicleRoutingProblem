@@ -7,8 +7,7 @@ import org.jetbrains.exposed.dao.id.IntIdTable
 import org.jetbrains.exposed.sql.Column
 
 internal object FitnessListTable : IntIdTable("fitness_list") {
-    val busStopsId: Column<Int> = integer("bus_stops_id")
-        .references(BusStopsTable.id)
+    val busStopsId = reference("bus_stops_id", BusStopsTable.id)
 }
 
 class FitnessListEntity(id: EntityID<Int>) : IntEntity(id) {

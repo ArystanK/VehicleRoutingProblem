@@ -71,24 +71,20 @@ class World(
         population = population.take(populationSize).toMutableList()
     }
 
-    fun solve() {
-        CoroutineScope(Dispatchers.IO).launch {
-            fitnessRepository.safeFitnessList(busStop).onSuccess { fitnessListObject ->
-                repeat(generationSize) {
-                    onGeneration()
-                    val fitnessList = population.map { it.fitness }
-                    coroutineScope {
-                        launch {
-                            fitnessRepository.safeFitness(
-                                fitnessList = fitnessListObject,
-                                avgFitness = fitnessList.average(),
-                                maxFitness = fitnessList.max()
-                            )
-                        }
-                    }
-                }
-            }
+    suspend fun solve() {
+//        coroutineScope {
+//            fitnessRepository.safeFitnessList(busStop).onSuccess { fitnessListObject ->
+        repeat(generationSize) {
+            onGeneration()
+//                    val fitnessList = population.map { it.fitness }
+//                    fitnessRepository.safeFitness(
+//                        fitnessList = fitnessListObject,
+//                        avgFitness = fitnessList.average(),
+//                        maxFitness = fitnessList.max()
+//                    )
         }
+//            }
+//        }
     }
 
     private fun getParent(previousSelected: Routes? = null): Routes {

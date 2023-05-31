@@ -18,7 +18,7 @@ import space.kscience.kmath.geometry.Degrees
 fun main(): Unit = runBlocking {
 //    val result = File("RESULT.json")
 //    val solutions = Json.decodeFromStream<List<VRPSolution>>(result.inputStream())
-    val searchBox = AstanaArea.partition(3)[2]
+    val searchBox = AstanaArea.partition(2)[2]
     val repository = BusStopsRepository()
     repository
         .getBusStops(searchBox).onSuccess {
@@ -27,7 +27,7 @@ fun main(): Unit = runBlocking {
                     .groupBy { it.busStops }
                     .getOrDefault(busStopsKey, emptyList())
                 println(coordinates.size)
-                val numberOfRoutes = 5
+                val numberOfRoutes = 15
                 val distanceMatrix =
                     generateDistanceMatrix(coordinates) { first, second ->
                         euclideanDistance(first.lat to first.lon, second.lat to second.lon)
@@ -35,23 +35,24 @@ fun main(): Unit = runBlocking {
 
                 val routesRepository = RoutesRepository()
                 val startTime = System.nanoTime()
-                val routes = solveVRPLinearProgramming(numberOfRoutes, distanceMatrix).map {
-                    it.toRoute().map { coordinates[it] }
-                }
-//                val algo = VehicleRoutingProblemGeneticAlgorithm(
-//                    numberOfRoutes = numberOfRoutes,
-//                    distMatrix = distanceMatrix,
-//                    busStops = busStopsKey,
-//                    fitnessRepository = FitnessRepository()
-//                )
-//                val routes = algo.solve().map { it.map { coordinates[it] } }
+//                val routes = solveVRPLinearProgramming(numberOfRoutes, distanceMatrix).map {
+//                    it.toRoute().map { coordinates[it] }
+//                }
+                val algo = VehicleRoutingProblemGeneticAlgorithm(
+                    numberOfRoutes = numberOfRoutes,
+                    distMatrix = distanceMatrix,
+                    busStops = busStopsKey,
+                    fitnessRepository = FitnessRepository()
+                )
+                algo.solve()
 
                 val endTime = System.nanoTime()
-                println(endTime - startTime)
-                routesRepository.safeSolution(routes, busStopsKey, "LP").onSuccess {
-                    println(it)
-                    println(routes)
-                }
+                println("TIMES = ${endTime - startTime}")
+                println("FITNESS = ${algo.fitness}")
+//                routesRepository.safeSolution(routes, busStopsKey, "GA").onSuccess {
+//                    println(it)
+//                    println(routes)
+//                }
 //    result.writeText(
 //        Json.encodeToJsonElement(solutions + VRPSolution(distanceMatrix, numberOfRoutes, solution)).toString()
 //    )

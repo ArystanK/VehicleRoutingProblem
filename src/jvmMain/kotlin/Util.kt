@@ -28,6 +28,19 @@ fun Rectangle<Gmc>.partition(n: Int): List<Rectangle<Gmc>> {
     }.flatten()
 }
 
+fun <T> List<T>.duplicates(): List<T> {
+    val duplicates = mutableListOf<T>()
+    val uniqueElements = HashSet<T>()
+
+    for (element in this) {
+        if (!uniqueElements.add(element)) {
+            duplicates.add(element)
+        }
+    }
+
+    return duplicates
+}
+
 fun generateDistanceMatrixMap(
     busStops: List<BusStop>,
     distance: (BusStop, BusStop) -> Double,

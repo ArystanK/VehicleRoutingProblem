@@ -1,5 +1,6 @@
 package domain.genetic_algorithm
 
+import duplicates
 import uniqueIn
 import kotlin.math.min
 import kotlin.random.Random
@@ -21,7 +22,7 @@ class Routes private constructor(
         100 / routes.maxOf { route -> route.windowed(2).sumOf { distMatrix[it[0]][it[1]] } }
 
     private val nodesVisited = routes.flatten().distinct()
-    private val duplicates = routes.flatten() - routes.flatten().distinct().toSet()
+    private val duplicates = routes.flatten().duplicates()
 
 
     fun crossover(other: Routes): Pair<Routes, Routes> {

@@ -176,7 +176,10 @@ object VRPDatabase {
         transaction(database) {
             addLogger(StdOutSqlLogger)
             FitnessEntity.new {
-                this.fitnessList = FitnessListEntity(fitnessList.id)
+                this.fitnessList = FitnessListEntity(fitnessList.id).apply {
+                    db = database
+                    klass = FitnessListEntity
+                }
                 this.maxFitness = maxFitness
                 this.avgFitness = avgFitness
             }.toFitness()
