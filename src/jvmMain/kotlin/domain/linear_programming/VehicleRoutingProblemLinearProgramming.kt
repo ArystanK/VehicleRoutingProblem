@@ -3,6 +3,8 @@ package domain.linear_programming
 import com.google.ortools.Loader
 import com.google.ortools.linearsolver.MPSolver
 import com.google.ortools.linearsolver.MPVariable
+import filterFalse
+import toDiagonalMatrix
 
 fun solveVRPLinearProgramming(
     numberOfRoutes: Int,
@@ -40,9 +42,14 @@ fun solveVRPLinearProgramming(
 
     val result = solver.solve()
 
-    if (result == MPSolver.ResultStatus.OPTIMAL) return x.toAdjacencyMatrices { it.solutionValue() == 1.0 }.map {
-        it.filterFalse().connectComponents(distMatrix).toDiagonalMatrix()
-    }.toTypedArray()
+    if (result == MPSolver.ResultStatus.OPTIMAL)
+        return x
+            .toAdjacencyMatrices { it.solutionValue() == 1.0 }
+            .map {
+                it.filterFalse()
+                    .connectComponents(distMatrix)
+                    .toDiagonalMatrix()
+            }.toTypedArray()
 
     throw Exception("Infeasible solution")
 }
@@ -54,10 +61,20 @@ private fun MPSolver.setObjective(z: MPVariable) {
     objective.setMinimization()
 }
 
-private fun MPSolver.createVariableX(m: Int, totalNumberOfNodes: Int): Array<Array<Array<MPVariable>>> =
-    Array(totalNumberOfNodes) { i -> Array(totalNumberOfNodes) { j -> Array(m) { makeBoolVar("x[$i, $j, $it]") } } }
+private fun MPSolver.createVariableX(
+    m: Int,
+    totalNumberOfNodes: Int,
+): Array<Array<Array<MPVariable>>> =
+    Array(totalNumberOfNodes) { i ->
+        Array(totalNumberOfNodes) { j ->
+            Array(m) {
+                makeBoolVar("x[$i, $j, $it]")
+            }
+        }
+    }
 
-private fun MPSolver.createVariableZ(): MPVariable = makeNumVar(0.0, Double.POSITIVE_INFINITY, "z")
+private fun MPSolver.createVariableZ(): MPVariable =
+    makeNumVar(0.0, Double.POSITIVE_INFINITY, "z")
 
 private fun MPSolver.makeIsVisitedConstraints(x: Array<Array<Array<MPVariable>>>) {
     for (i in x.indices) {

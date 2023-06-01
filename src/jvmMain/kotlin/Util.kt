@@ -28,6 +28,24 @@ fun Rectangle<Gmc>.partition(n: Int): List<Rectangle<Gmc>> {
     }.flatten()
 }
 
+fun Array<BooleanArray>.filterFalse(): Map<Int, Map<Int, Boolean>> {
+    val rowsWithOnlyFalse = withIndex().filter { booleans -> booleans.value.all { !it } }.map { it.index }
+    val result = mutableMapOf<Int, Map<Int, Boolean>>()
+    for (i in indices) {
+        val row = mutableMapOf<Int, Boolean>()
+        if (i in rowsWithOnlyFalse) continue
+        for (j in indices) {
+            if (j in rowsWithOnlyFalse) continue
+            row[j] = this[i][j]
+        }
+        result[i] = row
+    }
+    return result
+}
+
+fun Array<BooleanArray>.toDiagonalMatrix(): Array<BooleanArray> =
+    Array(size) { i -> BooleanArray(size) { j -> get(i)[j] || get(j)[i] } }
+
 fun <T> List<T>.duplicates(): List<T> {
     val duplicates = mutableListOf<T>()
     val uniqueElements = HashSet<T>()
@@ -39,6 +57,13 @@ fun <T> List<T>.duplicates(): List<T> {
     }
 
     return duplicates
+}
+
+fun <T> List<T>.filterOnce(predicate: (T) -> Boolean) : List<T> {
+    val result = toMutableList()
+    val index = indexOfFirst(predicate)
+    result.removeAt(index)
+    return result
 }
 
 fun generateDistanceMatrixMap(

@@ -1,6 +1,7 @@
 package domain.genetic_algorithm
 
 import duplicates
+import filterOnce
 import uniqueIn
 import kotlin.math.min
 import kotlin.random.Random
@@ -14,7 +15,6 @@ class Routes private constructor(
         distMatrix: Array<DoubleArray>,
         numberOfRoutes: Int,
         mutationRate: Double,
-        initialRoutes: List<List<Int>>? = null,
     ) :
             this(List(numberOfRoutes) { randomRoute(distMatrix.size) }, distMatrix, mutationRate)
 
@@ -73,7 +73,7 @@ class Routes private constructor(
                 if (size <= 10) return this
                 if (duplicates.isEmpty()) return this
                 val removeId = duplicates.random()
-                return filter { it != removeId }
+                return filterOnce { it != removeId }
             }
 
             fun addMutate(): List<Int> {
@@ -118,9 +118,11 @@ class Routes private constructor(
     }
 
 
-    override fun toString(): String {
-        return routes.joinToString("\n") { it.joinToString() } + " -> " + fitness
-    }
+    override fun toString(): String =
+        routes
+            .joinToString("\n") {
+                it.joinToString()
+            } + " -> " + fitness
 
     companion object {
         private fun randomRoute(n: Int): List<Int> {

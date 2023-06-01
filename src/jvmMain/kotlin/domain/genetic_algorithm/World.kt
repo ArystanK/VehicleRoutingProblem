@@ -2,10 +2,7 @@ package domain.genetic_algorithm
 
 import domain.poko.BusStops
 import domain.repository.FitnessRepository
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.coroutineScope
-import kotlinx.coroutines.launch
 import myBinarySearch
 import unique
 import kotlin.random.Random
@@ -25,34 +22,50 @@ class World(
             Routes(
                 distMatrix = distanceMatrix,
                 numberOfRoutes = numberOfRoutes,
-                mutationRate = mutationRate,
-                initialRoutes = initialRoutes
+                mutationRate = mutationRate
             ).let { if (initialRoutes == null) it else it.mutate() }
         }
-    private var cumulativeProportions: List<Double> = updateCumulativeProportion()
+    private var cumulativeProportions: List<Double> =
+        updateCumulativeProportion()
 
-    private tailrec fun tournamentSelection(previousSelected: Routes?): Routes {
-        if (population.all { it == previousSelected }) return population.first()
-        val tournamentSize = Random.nextInt((population.size * 0.5).toInt(), population.size)
-        val tournament = population.filter { it != previousSelected }.shuffled().take(tournamentSize)
-        if (tournament.isEmpty()) return tournamentSelection(previousSelected)
+    private tailrec fun tournamentSelection(
+        previousSelected: Routes?,
+    ): Routes {
+        if (population.all { it == previousSelected })
+            return population.first()
+        val tournamentSize = Random.nextInt(
+            from = (population.size * 0.5).toInt(),
+            until = population.size
+        )
+        val tournament = population.filter {
+            it != previousSelected
+        }.shuffled().take(tournamentSize)
+        if (tournament.isEmpty())
+            return tournamentSelection(previousSelected)
         return tournament.maxBy { it.fitness }
     }
 
     private fun biasedRandomSelection(): Routes {
         val selectedValue = Random.nextDouble()
-        if (selectedValue >= cumulativeProportions.last()) return population.last()
-        if (selectedValue <= cumulativeProportions.first()) return population.first()
-        val index = cumulativeProportions.myBinarySearch(selectedValue)
+        if (selectedValue >= cumulativeProportions.last())
+            return population.last()
+        if (selectedValue <= cumulativeProportions.first())
+            return population.first()
+        val index = cumulativeProportions
+            .myBinarySearch(selectedValue)
         return population[index]
     }
 
     private fun updateCumulativeProportion(): List<Double> {
         val sum = population.sumOf { it.fitness }
-        val proportions = population.map { sum / it.fitness }
+        val proportions = population.map {
+            sum / it.fitness
+        }
         val proportionSum = proportions.sum()
-        val normalizedProportions = proportions.map { it / proportionSum }
-        return normalizedProportions.runningReduce { acc, d -> acc + d }
+        val normalizedProportions = proportions
+            .map { it / proportionSum }
+        return normalizedProportions
+            .runningReduce { acc, d -> acc + d }
     }
 
     private fun onGeneration() {
@@ -72,23 +85,28 @@ class World(
     }
 
     suspend fun solve() {
-//        coroutineScope {
-//            fitnessRepository.safeFitnessList(busStop).onSuccess { fitnessListObject ->
-        repeat(generationSize) {
-            onGeneration()
-//                    val fitnessList = population.map { it.fitness }
-//                    fitnessRepository.safeFitness(
-//                        fitnessList = fitnessListObject,
-//                        avgFitness = fitnessList.average(),
-//                        maxFitness = fitnessList.max()
-//                    )
+        coroutineScope {
+//            fitnessRepository.safeFitnessList(busStop)
+//                .onSuccess { fitnessListObject ->
+                    repeat(generationSize) {
+                        onGeneration()
+                        val fitnessList = population
+                            .map { it.fitness }
+                        println(fitnessList.average())
+                        println(fitnessList.max())
+//                        fitnessRepository.safeFitness(
+//                            fitnessList = fitnessListObject,
+//                            avgFitness = fitnessList.average(),
+//                            maxFitness = fitnessList.max()
+//                        )
+//                    }
+                }
         }
-//            }
-//        }
     }
 
     private fun getParent(previousSelected: Routes? = null): Routes {
-        if (Random.nextDouble() > 0.5) return tournamentSelection(previousSelected)
+        if (Random.nextDouble() > 0.5)
+            return tournamentSelection(previousSelected)
         return biasedRandomSelection()
     }
 
@@ -97,5 +115,4 @@ class World(
         val parent2 = unique(getParent(parent1), parent1) { getParent(parent1) }
         return parent1 to parent2
     }
-
 }
