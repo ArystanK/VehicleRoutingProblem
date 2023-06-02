@@ -12,18 +12,16 @@ class VehicleRoutingProblemGeneticAlgorithm(
     private val ga = World(
         distanceMatrix = distMatrix,
         numberOfRoutes = numberOfRoutes,
-        generationSize = 10000,
-        populationSize = 10000,
+        generationSize = 1000,
+        populationSize = 1000,
         mutationRate = 0.15,
         initialRoutes = null,
         fitnessRepository = fitnessRepository,
         busStop = busStops
     )
 
-    suspend fun solve(): List<List<Int>> {
-        ga.solve()
-        return ga.population.maxBy { it.fitness }.routes
+    suspend fun solve(): Routes? {
+        return ga.solve()
     }
 
-    val fitness: Double = ga.population.maxBy { it.fitness }.fitness
 }

@@ -2,7 +2,9 @@ package domain.genetic_algorithm
 
 import domain.poko.BusStops
 import domain.repository.FitnessRepository
+import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.launch
 import myBinarySearch
 import unique
 import kotlin.random.Random
@@ -17,7 +19,7 @@ class World(
     private val busStop: BusStops,
     initialRoutes: List<List<Int>>? = null,
 ) {
-    var population: MutableList<Routes> =
+    private var population: MutableList<Routes> =
         MutableList(populationSize) {
             Routes(
                 distMatrix = distanceMatrix,
@@ -68,7 +70,7 @@ class World(
             .runningReduce { acc, d -> acc + d }
     }
 
-    private fun onGeneration() {
+    private fun onGeneration(): List<Double> {
         cumulativeProportions = updateCumulativeProportion()
         val offspring = mutableListOf<Routes>()
         while (offspring.size < populationSize) {
@@ -82,25 +84,24 @@ class World(
         population.addAll(offspring)
         population.sortByDescending { it.fitness }
         population = population.take(populationSize).toMutableList()
+        return population.map { it.fitness }
     }
 
-    suspend fun solve() {
-        coroutineScope {
-//            fitnessRepository.safeFitnessList(busStop)
-//                .onSuccess { fitnessListObject ->
-                    repeat(generationSize) {
-                        onGeneration()
-                        val fitnessList = population
-                            .map { it.fitness }
-                        println(fitnessList.average())
-                        println(fitnessList.max())
-//                        fitnessRepository.safeFitness(
-//                            fitnessList = fitnessListObject,
-//                            avgFitness = fitnessList.average(),
-//                            maxFitness = fitnessList.max()
-//                        )
-//                    }
+    suspend fun solve(): Routes? {
+        return coroutineScope {
+            val fitnessListObject = fitnessRepository.safeFitnessList(busStop).getOrNull() ?: return@coroutineScope null
+            repeat(generationSize) {
+                val fitness = async { onGeneration() }
+                launch {
+                    val fitnessList = fitness.await()
+                    fitnessRepository.safeFitness(
+                        fitnessList = fitnessListObject,
+                        avgFitness = fitnessList.average(),
+                        maxFitness = fitnessList.max()
+                    )
                 }
+            }
+            return@coroutineScope population.maxBy { it.fitness }
         }
     }
 
@@ -112,7 +113,11 @@ class World(
 
     private fun getParents(): Pair<Routes, Routes> {
         val parent1 = getParent()
-        val parent2 = unique(getParent(parent1), parent1) { getParent(parent1) }
+        val parent2 = unique(
+            a = getParent(parent1),
+            b = parent1,
+            f = { getParent(parent1) }
+        )
         return parent1 to parent2
     }
 }

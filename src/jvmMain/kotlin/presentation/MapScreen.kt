@@ -3,6 +3,7 @@ package presentation
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.CircularProgressIndicator
 import androidx.compose.material.MaterialTheme
 import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
@@ -56,7 +57,7 @@ fun App(component: VisualizationComponent) {
     MaterialTheme {
         Box(
             modifier = Modifier.fillMaxSize(),
-            contentAlignment = Alignment.TopEnd
+            contentAlignment = Alignment.Center
         ) {
             MapView(
                 viewScope = viewScope,
@@ -64,76 +65,84 @@ fun App(component: VisualizationComponent) {
             )
             Box(Modifier.fillMaxSize().background(Color.Gray.copy(alpha = if (state.isBusStopsAddMode) 0.7f else 0f)))
             Box(
-                modifier = Modifier
-                    .width(600.dp)
-                    .fillMaxHeight()
-                    .background(Color.White.copy(alpha = 0.8f)),
+                modifier = Modifier.fillMaxSize(),
+                contentAlignment = Alignment.TopEnd
             ) {
-                Column(
-                    verticalArrangement = Arrangement.Top,
-                    modifier = Modifier.fillMaxSize()
+                Box(
+                    modifier = Modifier
+                        .width(400.dp)
+                        .fillMaxHeight()
+                        .background(Color.White.copy(alpha = 0.8f)),
                 ) {
-                    Box(modifier = Modifier.padding(8.dp)) {
-                        Box(
-                            modifier = Modifier.background(Color.Gray, RoundedCornerShape(4.dp)).padding(4.dp),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Text("Bus stops:", style = MaterialTheme.typography.h5, color = Color.White)
-                        }
-                    }
-                    PickItemTable(
-                        items = state.busStops.keys.toList(),
-                        item = state.busStopsKey,
-                        onItemChange = { component.reduce(VisualizationIntent.BusStopsPickIntent(it)) },
-                        id = { id },
-                        onAdd = { component.reduce(VisualizationIntent.BusStopsAddModeToggle) }
-                    )
 
-                    Box(modifier = Modifier.padding(8.dp)) {
-                        Box(
-                            modifier = Modifier.background(Color.Gray, RoundedCornerShape(4.dp)).padding(4.dp),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Text("Routes:", style = MaterialTheme.typography.h5, color = Color.White)
+                    Column(
+                        verticalArrangement = Arrangement.Top,
+                        modifier = Modifier.fillMaxSize()
+                    ) {
+                        Box(modifier = Modifier.padding(8.dp)) {
+                            Box(
+                                modifier = Modifier.background(Color.Gray, RoundedCornerShape(4.dp)).padding(4.dp),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Text("Bus stops:", style = MaterialTheme.typography.h5, color = Color.White)
+                            }
                         }
-                    }
-                    PickItemTable(
-                        items = state.routesList[state.busStopsKey] ?: emptyList(),
-                        item = state.routeKey,
-                        onItemChange = { component.reduce(VisualizationIntent.RouteListPickIntent(it)) },
-                        id = { id },
-                        onAdd = { component.reduce(VisualizationIntent.RoutesAddModeToggle) }
-                    )
-                    Box(modifier = Modifier.padding(8.dp)) {
-                        Box(
-                            modifier = Modifier.background(Color.Gray, RoundedCornerShape(4.dp)).padding(4.dp),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Text("Route:", style = MaterialTheme.typography.h5, color = Color.White)
+                        PickItemTable(
+                            items = state.busStops.keys.toList(),
+                            item = state.busStopsKey,
+                            onItemChange = { component.reduce(VisualizationIntent.BusStopsPickIntent(it)) },
+                            id = { id },
+                            onAdd = { component.reduce(VisualizationIntent.BusStopsAddModeToggle) }
+                        )
+
+                        Box(modifier = Modifier.padding(8.dp)) {
+                            Box(
+                                modifier = Modifier.background(Color.Gray, RoundedCornerShape(4.dp)).padding(4.dp),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Text("Routes:", style = MaterialTheme.typography.h5, color = Color.White)
+                            }
                         }
+                        PickItemTable(
+                            items = state.routesList[state.busStopsKey] ?: emptyList(),
+                            item = state.routeKey,
+                            onItemChange = { component.reduce(VisualizationIntent.RouteListPickIntent(it)) },
+                            id = { id },
+                            onAdd = { component.reduce(VisualizationIntent.RoutesAddModeToggle) }
+                        )
+                        Box(modifier = Modifier.padding(8.dp)) {
+                            Box(
+                                modifier = Modifier.background(Color.Gray, RoundedCornerShape(4.dp)).padding(4.dp),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Text("Route:", style = MaterialTheme.typography.h5, color = Color.White)
+                            }
+                        }
+                        RouteTable(
+                            routes = state.routes,
+                            onRouteSelected = { component.reduce(VisualizationIntent.RouteShowIntent(it)) },
+                            shownRoutes = state.routesShown
+                        )
                     }
-                    RouteTable(
-                        routes = state.routes,
-                        onRouteSelected = { component.reduce(VisualizationIntent.RouteShowIntent(it)) },
-                        shownRoutes = state.routesShown
-                    )
+
                 }
             }
+
+            RoutesCreationDialog(
+                dialogShown = state.isAddRoutesMode,
+                numberOfRoutes = state.addRoutesState.numberOfRoutes,
+                solutionMethod = state.addRoutesState.solutionMethod,
+                onSolutionMethodChange = { component.reduce(VisualizationIntent.SolutionMethodChangeIntent(it)) },
+                onNumberOfRoutesChange = { component.reduce(VisualizationIntent.NumberOfRouteChangeIntent(it)) },
+                onCloseRequest = { component.reduce(VisualizationIntent.RoutesAddModeToggle) },
+                onSubmit = {
+                    component.reduce(VisualizationIntent.RoutesAdd)
+                },
+                isLoading = state.isLoading
+            )
         }
-        RoutesCreationDialog(
-            dialogShown = state.isAddRoutesMode,
-            numberOfRoutes = state.addRoutesState.numberOfRoutes,
-            solutionMethod = state.addRoutesState.solutionMethod,
-            onSolutionMethodChange = { component.reduce(VisualizationIntent.SolutionMethodChangeIntent(it)) },
-            onNumberOfRoutesChange = { component.reduce(VisualizationIntent.NumberOfRouteChangeIntent(it)) },
-            onCloseRequest = { component.reduce(VisualizationIntent.RoutesAddModeToggle) },
-            onSubmit = {
-                component.reduce(VisualizationIntent.RoutesAdd)
-            }
-        )
     }
 }
-
 
 fun main() {
     val busStopsRepository = BusStopsRepository()

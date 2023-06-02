@@ -43,8 +43,7 @@ fun main(): Unit = runBlocking {
                     distMatrix = distanceMatrix,
                     busStops = busStopsKey,
                     fitnessRepository = FitnessRepository()
-                )
-                algo.solve()
+                ).solve() ?: throw Exception("Some error")
 
                 val endTime = System.nanoTime()
                 println("TIMES = ${endTime - startTime}")

@@ -21,6 +21,7 @@ data class VisualizationState(
         client = HttpClient(CIO),
         cacheDirectory = Path.of("mapCache")
     ),
+    val isLoading: Boolean = false
 )
 
 data class AddRoutesState(

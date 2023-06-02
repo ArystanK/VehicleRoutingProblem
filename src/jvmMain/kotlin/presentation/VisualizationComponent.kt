@@ -51,7 +51,9 @@ class VisualizationComponent(
                     _state.update { state ->
                         val isRouteListAlreadySelected = intent.route in state.routesShown
                         val newRoutesShown = state.routesShown.toMutableList()
-                        if (!isRouteListAlreadySelected) newRoutesShown.add(intent.route) else newRoutesShown.remove(intent.route)
+                        if (!isRouteListAlreadySelected) newRoutesShown.add(intent.route) else newRoutesShown.remove(
+                            intent.route
+                        )
                         state.copy(
                             routesShown = newRoutesShown
                         )
@@ -97,6 +99,7 @@ class VisualizationComponent(
             }
 
             is VisualizationIntent.RoutesAdd -> {
+                _state.update { it.copy(isLoading = true) }
                 CoroutineScope(Dispatchers.IO).launch {
                     _state.update {
                         val numberOfRoutes = it.addRoutesState.numberOfRoutes.toIntOrNull() ?: return@launch
@@ -123,7 +126,7 @@ class VisualizationComponent(
                                         numberOfRoutes = numberOfRoutes,
                                         fitnessRepository = fitnessRepository,
                                         busStops = it.busStopsKey ?: return@async listOf()
-                                    ).solve()
+                                    ).solve()?.routes ?: listOf()
                                 }
 
                                 SolutionMethod.GNN -> {
@@ -140,7 +143,8 @@ class VisualizationComponent(
 //                            )
                         it.copy(
                             routes = routes,
-                            isAddRoutesMode = false
+                            isAddRoutesMode = false,
+                            isLoading = false
                         )
                     }
                 }
