@@ -1,30 +1,22 @@
 package presentation
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.CircularProgressIndicator
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material.MaterialTheme
-import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.unit.dp
-import androidx.compose.ui.window.Window
-import androidx.compose.ui.window.application
 import center.sciprog.maps.compose.*
 import center.sciprog.maps.features.FeatureGroup
 import center.sciprog.maps.features.ViewConfig
 import center.sciprog.maps.features.color
-import domain.repository.BusStopsRepository
-import domain.repository.FitnessRepository
-import domain.repository.RoutesRepository
-import presentation.components.PickItemTable
-import presentation.components.RouteTable
+import presentation.components.Menu
 import presentation.components.RoutesCreationDialog
+import kotlin.math.sqrt
 
 @Composable
 fun App(component: VisualizationComponent) {
@@ -34,7 +26,6 @@ fun App(component: VisualizationComponent) {
         mapTileProvider = state.mapTileProvider,
         config = ViewConfig(
             onSelect = {
-                println(it)
                 if (state.isBusStopsAddMode)
                     component.reduce(VisualizationIntent.BusStopsAddIntent(it))
             },
@@ -47,10 +38,9 @@ fun App(component: VisualizationComponent) {
         }
 
         state.busStopsKey?.let {
-            state.busStops[it]
-                ?.forEach {
-                    circle(it.lat to it.lon)
-                }
+            state.busStops[it]?.forEach {
+                circle(it.lat to it.lon)
+            }
         }
     }
 
@@ -64,69 +54,7 @@ fun App(component: VisualizationComponent) {
                 features = features,
             )
             Box(Modifier.fillMaxSize().background(Color.Gray.copy(alpha = if (state.isBusStopsAddMode) 0.7f else 0f)))
-            Box(
-                modifier = Modifier.fillMaxSize(),
-                contentAlignment = Alignment.TopEnd
-            ) {
-                Box(
-                    modifier = Modifier
-                        .width(400.dp)
-                        .fillMaxHeight()
-                        .background(Color.White.copy(alpha = 0.8f)),
-                ) {
-
-                    Column(
-                        verticalArrangement = Arrangement.Top,
-                        modifier = Modifier.fillMaxSize()
-                    ) {
-                        Box(modifier = Modifier.padding(8.dp)) {
-                            Box(
-                                modifier = Modifier.background(Color.Gray, RoundedCornerShape(4.dp)).padding(4.dp),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Text("Bus stops:", style = MaterialTheme.typography.h5, color = Color.White)
-                            }
-                        }
-                        PickItemTable(
-                            items = state.busStops.keys.toList(),
-                            item = state.busStopsKey,
-                            onItemChange = { component.reduce(VisualizationIntent.BusStopsPickIntent(it)) },
-                            id = { id },
-                            onAdd = { component.reduce(VisualizationIntent.BusStopsAddModeToggle) }
-                        )
-
-                        Box(modifier = Modifier.padding(8.dp)) {
-                            Box(
-                                modifier = Modifier.background(Color.Gray, RoundedCornerShape(4.dp)).padding(4.dp),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Text("Routes:", style = MaterialTheme.typography.h5, color = Color.White)
-                            }
-                        }
-                        PickItemTable(
-                            items = state.routesList[state.busStopsKey] ?: emptyList(),
-                            item = state.routeKey,
-                            onItemChange = { component.reduce(VisualizationIntent.RouteListPickIntent(it)) },
-                            id = { id },
-                            onAdd = { component.reduce(VisualizationIntent.RoutesAddModeToggle) }
-                        )
-                        Box(modifier = Modifier.padding(8.dp)) {
-                            Box(
-                                modifier = Modifier.background(Color.Gray, RoundedCornerShape(4.dp)).padding(4.dp),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Text("Route:", style = MaterialTheme.typography.h5, color = Color.White)
-                            }
-                        }
-                        RouteTable(
-                            routes = state.routes,
-                            onRouteSelected = { component.reduce(VisualizationIntent.RouteShowIntent(it)) },
-                            shownRoutes = state.routesShown
-                        )
-                    }
-
-                }
-            }
+            Menu(state, component)
 
             RoutesCreationDialog(
                 dialogShown = state.isAddRoutesMode,
@@ -135,25 +63,39 @@ fun App(component: VisualizationComponent) {
                 onSolutionMethodChange = { component.reduce(VisualizationIntent.SolutionMethodChangeIntent(it)) },
                 onNumberOfRoutesChange = { component.reduce(VisualizationIntent.NumberOfRouteChangeIntent(it)) },
                 onCloseRequest = { component.reduce(VisualizationIntent.RoutesAddModeToggle) },
-                onSubmit = {
-                    component.reduce(VisualizationIntent.RoutesAdd)
-                },
+                onSubmit = { component.reduce(VisualizationIntent.RoutesAdd) },
                 isLoading = state.isLoading
             )
         }
     }
 }
 
-fun main() {
-    val busStopsRepository = BusStopsRepository()
-    val routesRepository = RoutesRepository()
-    val fitnessRepository = FitnessRepository()
-    val component = VisualizationComponent(routesRepository, busStopsRepository, fitnessRepository)
-    application {
-        Window(onCloseRequest = ::exitApplication, title = "VRP") {
-            App(component)
-        }
-    }
+private fun invSqrt(x: Double): Double {
+    var i: Long
+    val threehalfs = 1.5f
+    val x2 = x * 0.5f
+    var y = x
+    i = java.lang.Double.doubleToLongBits(y) // evil floating point bit level hacking
+    i = 0x5f3759df - (i shr 1) // what the fuck?
+    y = java.lang.Double.longBitsToDouble(i)
+    y *= (threehalfs - x2 * y * y) // 1st iteration
+    // y = y * (threehalfs - (x2 * y * y)); // 2nd iteration, this can be removed
+    return y
+//        return (float) (1.0f / Math.sqrt(x));
 }
 
-
+fun main() {
+    for (i in 2..10) {
+        println(invSqrt(i.toDouble()))
+        println(1 / (sqrt(i.toDouble())))
+    }
+//    val busStopsRepository = BusStopsRepository()
+//    val routesRepository = RoutesRepository()
+//    val fitnessRepository = FitnessRepository()
+//    val component = VisualizationComponent(routesRepository, busStopsRepository, fitnessRepository)
+//    application {
+//        Window(onCloseRequest = ::exitApplication, title = "VRP") {
+//            App(component)
+//        }
+//    }
+}

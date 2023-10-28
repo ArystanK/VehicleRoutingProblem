@@ -29,6 +29,8 @@ kotlin {
             dependencies {
                 implementation(compose.desktop.currentOs)
                 implementation("center.sciprog:maps-kt-compose:0.2.2")
+                implementation("space.kscience:trajectory-kt:0.2.2")
+
                 implementation("io.ktor:ktor-client-core-jvm:$ktorVersion")
                 implementation("io.ktor:ktor-client-cio-jvm:$ktorVersion")
                 implementation("io.ktor:ktor-serialization-kotlinx-json:$ktorVersion")
@@ -49,6 +51,7 @@ kotlin {
                 implementation("org.openjfx:javafx-graphics:17:win")
 
                 implementation("org.slf4j:slf4j-api:1.7.25")
+                implementation("com.squareup.okhttp3:okhttp:4.9.2")
 
                 runtimeOnly("org.postgresql:postgresql:42.2.27")
             }
